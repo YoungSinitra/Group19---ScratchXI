@@ -100,7 +100,7 @@
                 </a>
               {% else %}—{% endif %}
             </td>
-            <td class="td-muted">{{ a.created_at[:16] }}</td>
+            <td class="td-muted">{{ (a.created_at|string)[:16] }}</td>
             <td>
               <div class="action-group">
                 <button class="btn btn-warn btn-sm" onclick="openAssign({{ a.id }}, '{{ a.incident_type | replace("'","\\'") }}')">Assign</button>
@@ -141,7 +141,7 @@
             <div class="alert-title">{{ b.message }}</div>
             <div class="alert-meta">
               <span class="meta-tag">📢 {{ b.sender_name }}</span>
-              <span class="meta-tag">🕐 {{ b.sent_at[:16] }}</span>
+              <span class="meta-tag">🕐 {{ (b.sent_at|string)[:16] }}</span>
             </div>
           </div>
           <div class="alert-right"><span class="status-badge" style="background:var(--brand-light);color:var(--brand);">Broadcast</span></div>

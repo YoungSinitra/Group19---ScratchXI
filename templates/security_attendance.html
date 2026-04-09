@@ -25,7 +25,7 @@
         <div class="detail-grid" style="margin-bottom:1.25rem;">
           <div class="detail-item">
             <div class="detail-label">Clocked In</div>
-            <div class="detail-value">{{ active.clock_in[:16] }}</div>
+            <div class="detail-value">{{ (active.clock_in|string)[:16] }}</div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Campus</div>
@@ -111,8 +111,8 @@
             <td class="td-muted">{{ rec.date_str }}</td>
             <td class="td-muted">{{ rec.campus or '—' }}</td>
             <td class="td-muted" style="font-size:.75rem;">{{ rec.shift or '—' }}</td>
-            <td>{{ rec.clock_in[:16] }}</td>
-            <td class="td-muted">{{ rec.clock_out[:16] if rec.clock_out else '—' }}</td>
+            <td>{{ (rec.clock_in|string)[:16] }}</td>
+            <td class="td-muted">{{ (rec.clock_out|string)[:16] if rec.clock_out else '—' }}</td>
             <td>
               <span class="task-badge {% if rec.availability=='available' %}task-submitted{% else %}task-in_progress{% endif %}">
                 {{ rec.availability }}

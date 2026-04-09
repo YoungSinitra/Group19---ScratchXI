@@ -23,7 +23,7 @@
             {% elif msg.sender_role == 'security' %}🛡️ Security
             {% elif msg.sender_role == 'staff' %}🏫 Staff
             {% else %}🎓 Student{% endif %}
-            — {{ msg.sender_name }} · {{ msg.timestamp[:16] if msg.timestamp else '' }}
+            — {{ msg.sender_name }} · {{ (msg.timestamp|string)[:16] if msg.timestamp else '' }}
           </div>
           <div class="chat-bubble">{{ msg.message }}</div>
         </div>

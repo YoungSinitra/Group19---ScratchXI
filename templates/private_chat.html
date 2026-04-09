@@ -35,7 +35,7 @@
           data-id="{{ msg.id }}">
           <div class="chat-meta">
             {% if msg.sender_role == 'admin' %}🔑 Admin{% else %}🛡️ Security{% endif %}
-            — {{ msg.sender_name }} · {{ msg.timestamp[:16] if msg.timestamp else '' }}
+            — {{ msg.sender_name }} · {{ (msg.timestamp|string)[:16] if msg.timestamp else '' }}
           </div>
           <div class="chat-bubble">{{ msg.message }}</div>
         </div>

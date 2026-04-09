@@ -40,9 +40,9 @@
             <td>{{ alert.block or '—' }}</td>
             <td class="td-muted" style="max-width:200px;">{{ alert.description[:80] }}{% if alert.description|length>80 %}…{% endif %}</td>
             <td><span class="sev-label sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
-            <td class="td-muted">{{ alert.created_at[:16] }}</td>
+            <td class="td-muted">{{ (alert.created_at|string)[:16] }}</td>
             <td>{{ alert.resolved_by or '—' }}</td>
-            <td class="td-muted">{{ alert.resolved_at[:16] if alert.resolved_at else '—' }}</td>
+            <td class="td-muted">{{ (alert.resolved_at|string)[:16] if alert.resolved_at else '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>

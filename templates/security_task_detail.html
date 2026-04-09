@@ -36,7 +36,7 @@
             </div>
             <div class="detail-item">
               <div class="detail-label">Reported At</div>
-              <div class="detail-value">{{ alert.created_at[:16] }}</div>
+              <div class="detail-value">{{ (alert.created_at|string)[:16] }}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Current Status</div>
@@ -78,7 +78,7 @@
             <div class="feedback-item">
               <div class="feedback-header">
                 <span class="feedback-status">{{ fb.status_update }}</span>
-                <span>{{ fb.submitted_at[:16] }}</span>
+                <span>{{ (fb.submitted_at|string)[:16] }}</span>
               </div>
               <p class="feedback-notes">{{ fb.notes }}</p>
             </div>
@@ -108,7 +108,7 @@
           </div>
           <div class="detail-item" style="margin-bottom:0.85rem;">
             <div class="detail-label">Assigned At</div>
-            <div class="detail-value">{{ assignment.assigned_at[:16] }}</div>
+            <div class="detail-value">{{ (assignment.assigned_at|string)[:16] }}</div>
           </div>
           {% if assignment.task_status == 'assigned' %}
             <button class="btn btn-brand btn-full" onclick="acceptThisTask({{ alert.id }})">✓ Accept This Task</button>
@@ -131,7 +131,7 @@
                 <a href="{{ url_for('static', filename='uploads/'+ev.filename) }}" target="_blank">
                   <img src="{{ url_for('static', filename='uploads/'+ev.filename) }}" alt="Evidence">
                 </a>
-                <div class="evidence-card-meta">{{ ev.uploaded_at[:16] }}</div>
+                <div class="evidence-card-meta">{{ (ev.uploaded_at|string)[:16] }}</div>
               </div>
               {% endfor %}
             </div>

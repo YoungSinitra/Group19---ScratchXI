@@ -72,7 +72,7 @@
             {% elif msg.sender_role == 'security' %}🛡️ Security
             {% elif msg.sender_role == 'staff' %}🏫 Staff
             {% else %}🎓 Student{% endif %}
-            — {{ msg.sender_name }} · {{ msg.timestamp[:16] if msg.timestamp else '' }}
+            — {{ msg.sender_name }} · {{ (msg.timestamp|string)[:16] if msg.timestamp else '' }}
             {% if role == 'admin' %}
               <button onclick="deleteMessage({{ msg.id }})"
                 style="margin-left:.5rem;font-size:.7rem;color:var(--brand);

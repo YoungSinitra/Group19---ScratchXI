@@ -62,7 +62,7 @@
             <div class="alert-meta">
               <span class="meta-tag">🏛️ {{ a.campus or '—' }}</span>
               <span class="meta-tag">📍 {{ a.block or a.location }}</span>
-              <span class="meta-tag">🕐 {{ a.created_at[:16] }}</span>
+              <span class="meta-tag">🕐 {{ (a.created_at|string)[:16] }}</span>
               <span class="meta-tag">👤 {{ a.reporter_name }}</span>
             </div>
           </div>
@@ -101,7 +101,7 @@
             <div class="alert-title">{{ b.message }}</div>
             <div class="alert-meta">
               <span class="meta-tag">📢 {{ b.sender_name }}</span>
-              <span class="meta-tag">🕐 {{ b.sent_at[:16] }}</span>
+              <span class="meta-tag">🕐 {{ (b.sent_at|string)[:16] }}</span>
             </div>
           </div>
           <div class="alert-right"><span class="status-badge" style="background:var(--brand-light);color:var(--brand);">Broadcast</span></div>
@@ -148,7 +148,7 @@
             <div class="detail-item"><div class="detail-label">Campus</div><div class="detail-value">{{ task.campus or '—' }}</div></div>
             <div class="detail-item"><div class="detail-label">Block</div><div class="detail-value">{{ task.block or task.location }}</div></div>
             <div class="detail-item"><div class="detail-label">Reported By</div><div class="detail-value">{{ task.reporter_name }}</div></div>
-            <div class="detail-item"><div class="detail-label">Assigned</div><div class="detail-value">{{ task.assigned_at[:16] }}</div></div>
+            <div class="detail-item"><div class="detail-label">Assigned</div><div class="detail-value">{{ (task.assigned_at|string)[:16] }}</div></div>
           </div>
           <p style="font-size:0.8rem;color:var(--text-3);margin-top:0.6rem;line-height:1.55;">
             {{ task.description[:140] }}{% if task.description|length > 140 %}…{% endif %}

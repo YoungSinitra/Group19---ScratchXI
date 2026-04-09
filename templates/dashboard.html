@@ -49,7 +49,7 @@
             <div class="alert-meta">
               <span class="meta-tag">🏛️ {{ a.campus or '—' }}</span>
               <span class="meta-tag">📍 {{ a.block or a.location }}</span>
-              <span class="meta-tag">🕐 {{ a.created_at[:16] }}</span>
+              <span class="meta-tag">🕐 {{ (a.created_at|string)[:16] }}</span>
               <span class="meta-tag">👤 {{ a.reporter_name }}</span>
             </div>
           </div>
@@ -87,7 +87,7 @@
             <div class="alert-title">{{ b.message }}</div>
             <div class="alert-meta">
               <span class="meta-tag">📢 {{ b.sender_name }}</span>
-              <span class="meta-tag">🕐 {{ b.sent_at[:16] }}</span>
+              <span class="meta-tag">🕐 {{ (b.sent_at|string)[:16] }}</span>
             </div>
           </div>
           <div class="alert-right"><span class="status-badge" style="background:var(--brand-light);color:var(--brand);">Broadcast</span></div>

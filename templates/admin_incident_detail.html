@@ -40,7 +40,7 @@
                 </span>
               </div>
             </div>
-            <div class="detail-item"><div class="detail-label">Reported At</div><div class="detail-value">{{ alert.created_at[:16] }}</div></div>
+            <div class="detail-item"><div class="detail-label">Reported At</div><div class="detail-value">{{ (alert.created_at|string)[:16] }}</div></div>
           </div>
           <div style="margin-top:0.85rem;">
             <div class="detail-label" style="margin-bottom:0.3rem;">Description</div>
@@ -68,7 +68,7 @@
               <div class="feedback-header">
                 <span class="feedback-status">{{ fb.status_update }}</span>
                 <span>by {{ fb.submitted_by_name }}</span>
-                <span>{{ fb.submitted_at[:16] }}</span>
+                <span>{{ (fb.submitted_at|string)[:16] }}</span>
               </div>
               <p class="feedback-notes">{{ fb.notes }}</p>
             </div>
@@ -91,7 +91,7 @@
                   <img src="{{ url_for('static', filename='uploads/'+ev.filename) }}" alt="Evidence">
                 </a>
                 <div class="evidence-card-meta">
-                  {{ ev.uploaded_by_name }}<br>{{ ev.uploaded_at[:16] }}
+                  {{ ev.uploaded_by_name }}<br>{{ (ev.uploaded_at|string)[:16] }}
                 </div>
               </div>
               {% endfor %}
@@ -173,7 +173,7 @@
             <span class="task-badge task-{{ a.task_status }}" style="margin-left:0.4rem;">{{ a.task_status | replace('_',' ') }}</span>
             {% if not a.is_active %}<span style="color:var(--text-3);font-size:0.71rem;margin-left:0.4rem;">(reassigned)</span>{% endif %}
             <div style="color:var(--text-3);font-size:0.71rem;margin-top:2px;">
-              Assigned {{ a.assigned_at[:16] }} by {{ a.assigned_by_name }}
+              Assigned {{ (a.assigned_at|string)[:16] }} by {{ a.assigned_by_name }}
             </div>
           </div>
           {% endfor %}
