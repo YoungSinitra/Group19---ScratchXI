@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Register{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Attendance Register</h1>
+      <p>Clock in / out and set your availability — {{ today }}</p>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:600px;margin-bottom:1.5rem;">
+    <div class="card-header">
+      <h2>Today's Status</h2>
+      {% if active %}
+        <span class="status-badge {% if active.availability == 'available' %}status-resolved{% else %}status-escalated{% endif %}">
+          {{ '🟢 Available' if active.availability == 'available' else '🔴 Unavailable' }}
+        </span>
+      {% else %}
+        <span class="status-badge status-closed">⚫ Not Clocked In</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if active %}
+        <div class="detail-grid" style="margin-bottom:1.25rem;">
+          <div class="detail-item">
+            <div class="detail-label">Clocked In</div>
+            <div class="detail-value">{{ active.clock_in[:16] }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Campus</div>
+            <div class="detail-value">{{ active.campus or '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Shift</div>
+            <div class="detail-value">{{ active.shift or '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Availability</div>
+            <div class="detail-value">{{ active.availability | capitalize }}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+          <form method="POST" style="display:inline;">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="clock_out">
+            <button type="submit" class="btn btn-danger"
+              onclick="return confirm('Confirm clock out?')">🚪 Clock Out</button>
+          </form>
+          <form method="POST" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="set_availability">
+            <select name="availability" class="inline-select">
+              <option value="available"   {% if active.availability=='available'   %}selected{% endif %}>Available</option>
+              <option value="unavailable" {% if active.availability=='unavailable' %}selected{% endif %}>Unavailable</option>
+            </select>
+            <button type="submit" class="btn btn-outline btn-sm">Update Status</button>
+          </form>
+        </div>
+      {% else %}
+        <p style="font-size:.85rem;color:var(--text-3);margin-bottom:1.1rem;">
+          Select your campus and shift before clocking in. This allows admin to assign tasks correctly.
+        </p>
+        <form method="POST">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="clock_in">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.9rem;">
+            <div class="field" style="margin:0;">
+              <label>Campus <span style="color:var(--status-active)">*</span></label>
+              <select name="campus" required class="inline-select" style="width:100%;">
+                <option value="" disabled selected>Select campus…</option>
+                {% for c in campuses %}
+                  <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field" style="margin:0;">
+              <label>Shift <span style="color:var(--status-active)">*</span></label>
+              <select name="shift" required class="inline-select" style="width:100%;">
+                <option value="" disabled selected>Select shift…</option>
+                {% for s in shifts %}
+                  <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field" style="margin:0;">
+              <label>Availability</label>
+              <select name="availability" class="inline-select" style="width:100%;">
+                <option value="available">Available</option>
+                <option value="unavailable">Unavailable</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-brand">✅ Clock In</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card" style="max-width:700px;">
+    <div class="card-header"><h2>Recent Attendance</h2></div>
+    {% if history %}
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Campus</th><th>Shift</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for rec in history %}
+          <tr>
+            <td class="td-muted">{{ rec.date_str }}</td>
+            <td class="td-muted">{{ rec.campus or '—' }}</td>
+            <td class="td-muted" style="font-size:.75rem;">{{ rec.shift or '—' }}</td>
+            <td>{{ rec.clock_in[:16] }}</td>
+            <td class="td-muted">{{ rec.clock_out[:16] if rec.clock_out else '—' }}</td>
+            <td>
+              <span class="task-badge {% if rec.availability=='available' %}task-submitted{% else %}task-in_progress{% endif %}">
+                {{ rec.availability }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty"><div class="empty-icon">📋</div><p>No attendance records yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

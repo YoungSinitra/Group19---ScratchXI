@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Private Security Channel{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+{% endblock %}
+{% block content %}
+<span id="current-user-name"
+  data-name="{{ session.get('user_name') }}"
+  data-role="{{ session.get('user_role') }}"
+  style="display:none;"></span>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>🔒 Private Security Channel</h1>
+      <p>Encrypted private channel — Admin and Security personnel only</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <a href="{{ url_for('chat') }}" class="btn btn-outline btn-sm">← Public Chat</a>
+      <span class="live-label"><span class="live-dot"></span> Live</span>
+    </div>
+  </div>
+
+  <div class="info-banner" style="max-width:740px;margin:0 auto 1rem;border-left:4px solid var(--brand);">
+    🔐 <strong>Private channel</strong> — Messages in this channel are only visible to Admin and Security personnel. Students and staff cannot access this channel.
+  </div>
+
+  <div class="chat-wrap" style="max-width:740px;margin:0 auto;">
+    <div class="chat-box" id="private-chat-box" style="background:rgba(10,41,82,0.03);">
+      <div class="chat-system">🔒 Private Admin-Security Channel · Messages are end-to-end isolated</div>
+
+      {% for msg in messages %}
+        <div class="chat-msg
+            {% if msg.sender_name == session.get('user_name') %}own{% else %}other security{% endif %}"
+          data-id="{{ msg.id }}">
+          <div class="chat-meta">
+            {% if msg.sender_role == 'admin' %}🔑 Admin{% else %}🛡️ Security{% endif %}
+            — {{ msg.sender_name }} · {{ msg.timestamp[:16] if msg.timestamp else '' }}
+          </div>
+          <div class="chat-bubble">{{ msg.message }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="chat-input-bar" style="background:rgba(10,41,82,0.04);">
+      <input type="text" id="private-chat-input" autocomplete="off">
+      <button class="btn btn-brand" onclick="sendPrivateMessage()">Send</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const PRIV_USER = document.getElementById('current-user-name')?.dataset.name || 'Unknown';
+const PRIV_ROLE = document.getElementById('current-user-name')?.dataset.role || 'security';
+const privSocket = io();
+
+// Join the private room on connect
+privSocket.on('connect', () => {
+  privSocket.emit('join_room_event', { room: 'private_admin_security' });
+});
+
+privSocket.on('system_msg', d => appendPrivSys(d.text));
+privSocket.on('disconnect', () => appendPrivSys('Disconnected. Reconnecting…'));
+
+privSocket.on('receive_private_message', function(data) {
+  appendPrivMsg(data);
+  scrollPriv();
+});
+
+privSocket.on('chat_error', d => appendPrivSys('⚠️ ' + d.message));
+
+function sendPrivateMessage() {
+  const input = document.getElementById('private-chat-input');
+  const msg   = input?.value.trim();
+  if (!msg) return;
+  privSocket.emit('send_private_message', {
+    message: msg,
+    sender_name: PRIV_USER,
+    sender_role: PRIV_ROLE,
+  });
+  input.value = '';
+  input.focus();
+}
+
+function appendPrivMsg(data) {
+  const box = document.getElementById('private-chat-box');
+  if (!box) return;
+  const isOwn = data.sender_name === PRIV_USER;
+  const icon  = data.sender_role === 'admin' ? '🔑 Admin' : '🛡️ Security';
+  const div   = document.createElement('div');
+  div.className = 'chat-msg' + (isOwn ? ' own' : ' other security');
+  div.dataset.id = data.id || '';
+  div.innerHTML =
+    `<div class="chat-meta">${icon} — ${esc(data.sender_name)} · ${data.timestamp||'now'}</div>` +
+    `<div class="chat-bubble">${esc(data.message)}</div>`;
+  box.appendChild(div);
+}
+
+function appendPrivSys(text) {
+  const box = document.getElementById('private-chat-box');
+  if (!box) return;
+  const d = document.createElement('div');
+  d.className = 'chat-system'; d.textContent = text;
+  box.appendChild(d);
+}
+
+function scrollPriv() {
+  const b = document.getElementById('private-chat-box');
+  if (b) b.scrollTop = b.scrollHeight;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || ''; return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('private-chat-input');
+  if (inp) inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrivateMessage(); }
+  });
+  scrollPriv();
+});
+</script>
+{% endblock %}

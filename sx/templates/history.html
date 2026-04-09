@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Alert History{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Alert History</h1>
+      <p>Permanent log of all resolved campus security incidents</p>
+    </div>
+    <span style="font-size:0.8rem;color:var(--text-3);">{{ resolved|length }} shown</span>
+  </div>
+
+  <div class="filter-label-row"><span class="filter-label">Search history</span></div>
+  <form method="GET" action="{{ url_for('alert_history') }}" class="filter-bar">
+    <input type="text" name="q" value="{{ search }}" class="filter-input" aria-label="Search history">
+    <select name="campus" class="filter-select">
+      <option value="">All campuses</option>
+      {% for c in campuses %}
+        <option value="{{ c }}" {% if c==campus_f %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    {% if search or campus_f %}<a href="{{ url_for('alert_history') }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+  </form>
+
+  <div class="card">
+    <div class="card-header"><h2>Resolved Incidents</h2></div>
+    {% if resolved %}
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Type</th><th>Campus</th><th>Block</th><th>Description</th><th>Severity</th><th>Reported</th><th>Resolved By</th><th>Resolved At</th></tr>
+        </thead>
+        <tbody>
+          {% for alert in resolved %}
+          <tr>
+            <td class="td-muted">{{ alert.id }}</td>
+            <td class="td-title">{{ alert.incident_type }}</td>
+            <td>{{ alert.campus or '—' }}</td>
+            <td>{{ alert.block or '—' }}</td>
+            <td class="td-muted" style="max-width:200px;">{{ alert.description[:80] }}{% if alert.description|length>80 %}…{% endif %}</td>
+            <td><span class="sev-label sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
+            <td class="td-muted">{{ alert.created_at[:16] }}</td>
+            <td>{{ alert.resolved_by or '—' }}</td>
+            <td class="td-muted">{{ alert.resolved_at[:16] if alert.resolved_at else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty"><div class="empty-icon">📋</div><p>No resolved alerts{% if search or campus_f %} matching your filter{% endif %}.</p></div>
+    {% endif %}
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}<a href="{{ url_for('alert_history',page=page-1,q=search,campus=campus_f) }}" class="btn btn-ghost btn-sm">← Prev</a>{% endif %}
+      <span style="font-size:0.8rem;">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}<a href="{{ url_for('alert_history',page=page+1,q=search,campus=campus_f) }}" class="btn btn-ghost btn-sm">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

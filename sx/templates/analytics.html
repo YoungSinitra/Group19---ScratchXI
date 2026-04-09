@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Incident Analytics</h1>
+      <p>Data-driven overview of campus security trends and hotspots</p>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="stats-grid stats-grid-5">
+    <div class="stat stat-total"><div class="stat-num">{{ total_alerts }}</div><div class="stat-lbl">Total Alerts</div></div>
+    <div class="stat stat-active"><div class="stat-num">{{ total_active }}</div><div class="stat-lbl">Active</div></div>
+    <div class="stat stat-res"><div class="stat-num">{{ total_resolved }}</div><div class="stat-lbl">Resolved</div></div>
+    <div class="stat stat-inv"><div class="stat-num">{{ total_users }}</div><div class="stat-lbl">Registered Users</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--text-3);">{{ total_alerts - total_resolved - total_active }}</div><div class="stat-lbl">Closed / Other</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem;">
+
+    <!-- Incidents by Campus -->
+    <div class="card">
+      <div class="card-header"><h2>Incidents by Campus</h2></div>
+      <div class="card-body">
+        {% if by_campus %}
+          {% set max_c = by_campus[0].count %}
+          {% for row in by_campus %}
+          <div style="margin-bottom:0.8rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;">
+              <span>{{ row.campus }}</span><span><strong>{{ row.count }}</strong></span>
+            </div>
+            <div style="background:var(--bg-subtle);border-radius:4px;height:8px;overflow:hidden;">
+              <div style="background:var(--brand);height:8px;width:{{ ((row.count/max_c)*100)|round }}%;border-radius:4px;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}<p style="color:var(--text-3);font-size:0.82rem;">No campus data yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <!-- Incidents by Type -->
+    <div class="card">
+      <div class="card-header"><h2>Incidents by Type</h2></div>
+      <div class="card-body">
+        {% if by_type %}
+          {% set max_t = by_type[0].count %}
+          {% for row in by_type %}
+          <div style="margin-bottom:0.8rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;">
+              <span>{{ row.incident_type }}</span><span><strong>{{ row.count }}</strong></span>
+            </div>
+            <div style="background:var(--bg-subtle);border-radius:4px;height:8px;overflow:hidden;">
+              <div style="background:var(--sev-high);height:8px;width:{{ ((row.count/max_t)*100)|round }}%;border-radius:4px;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}<p style="color:var(--text-3);font-size:0.82rem;">No incident data yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <!-- Severity Breakdown -->
+    <div class="card">
+      <div class="card-header"><h2>Severity Breakdown</h2></div>
+      <div class="card-body">
+        {% if by_severity %}
+          {% set max_s = by_severity[0].count %}
+          {% for row in by_severity %}
+          <div style="margin-bottom:0.8rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;">
+              <span class="sev-label sev-{{ row.severity }}">{{ row.severity | capitalize }}</span>
+              <strong>{{ row.count }}</strong>
+            </div>
+            <div style="background:var(--bg-subtle);border-radius:4px;height:8px;overflow:hidden;">
+              <div class="sev-bar-{{ row.severity }}" style="height:8px;width:{{ ((row.count/max_s)*100)|round }}%;border-radius:4px;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}<p style="color:var(--text-3);font-size:0.82rem;">No data yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <!-- Priority Breakdown -->
+    <div class="card">
+      <div class="card-header"><h2>Priority Breakdown</h2></div>
+      <div class="card-body">
+        {% if by_priority %}
+          {% set max_p = by_priority[0].count %}
+          {% for row in by_priority %}
+          <div style="margin-bottom:0.8rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;">
+              <span class="priority-badge pri-{{ row.priority }}">{{ row.priority | capitalize }}</span>
+              <strong>{{ row.count }}</strong>
+            </div>
+            <div style="background:var(--bg-subtle);border-radius:4px;height:8px;overflow:hidden;">
+              <div class="pri-bar-{{ row.priority }}" style="height:8px;width:{{ ((row.count/max_p)*100)|round }}%;border-radius:4px;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}<p style="color:var(--text-3);font-size:0.82rem;">No priority data yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <!-- Top Hotspots -->
+    <div class="card">
+      <div class="card-header"><h2>🔥 Incident Hotspots</h2></div>
+      <div class="card-body">
+        {% if hotspots %}
+        <table style="width:100%;font-size:0.82rem;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:4px 8px;">Campus</th>
+              <th style="text-align:left;padding:4px 8px;">Block</th>
+              <th style="text-align:right;padding:4px 8px;">Incidents</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in hotspots %}
+            <tr style="border-top:1px solid var(--border-light);">
+              <td style="padding:6px 8px;">{{ h.campus }}</td>
+              <td style="padding:6px 8px;">{{ h.block }}</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--brand);">{{ h.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p style="color:var(--text-3);font-size:0.82rem;">No hotspot data yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="card">
+      <div class="card-header"><h2>Status Breakdown</h2></div>
+      <div class="card-body">
+        {% if by_status %}
+          {% set max_st = by_status | map(attribute='count') | max %}
+          {% for row in by_status %}
+          <div style="margin-bottom:0.8rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;">
+              <span class="status-badge status-{{ row.status }}">{{ row.status | replace('_',' ') | title }}</span>
+              <strong>{{ row.count }}</strong>
+            </div>
+            <div style="background:var(--bg-subtle);border-radius:4px;height:8px;overflow:hidden;">
+              <div style="background:var(--brand);opacity:0.5;height:8px;width:{{ ((row.count/max_st)*100)|round }}%;border-radius:4px;"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}<p style="color:var(--text-3);font-size:0.82rem;">No data yet.</p>{% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Monthly Trend -->
+  {% if monthly %}
+  <div class="card" style="margin-top:1.25rem;">
+    <div class="card-header"><h2>Monthly Incident Trend (last 6 months)</h2></div>
+    <div class="card-body">
+      {% set max_m = monthly | map(attribute='count') | max %}
+      <div style="display:flex;align-items:flex-end;gap:1rem;height:110px;">
+        {% for row in monthly %}
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:0.72rem;font-weight:700;">{{ row.count }}</span>
+          <div style="width:100%;background:var(--brand);border-radius:4px 4px 0 0;height:{{ ((row.count/max_m)*86)|round }}px;min-height:4px;"></div>
+          <span style="font-size:0.68rem;color:var(--text-3);">{{ row.month }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+
+{% endblock %}

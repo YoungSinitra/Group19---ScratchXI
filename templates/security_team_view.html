@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Team View{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Team View</h1>
+      <p>All active incidents and assignments across the security team</p>
+    </div>
+    <span class="live-label"><span class="live-dot"></span> Live</span>
+  </div>
+
+  <div class="info-banner" style="margin-bottom:1.25rem;margin-top:0;">
+    🔒 <strong>Read-only view</strong> — Only admin can assign incidents. This view shows all active incidents and who is currently working on each.
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Active Incidents</h2>
+      <span style="font-size:.78rem;color:var(--text-3);">{{ incidents|length }} active</span>
+    </div>
+    {% if incidents %}
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Type</th><th>Campus</th><th>Block</th>
+            <th>Priority</th><th>Severity</th><th>Status</th>
+            <th>Assigned To</th><th>Task Status</th><th>Reported</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inc in incidents %}
+          <tr id="row-{{ inc.id }}">
+            <td class="td-muted">{{ inc.id }}</td>
+            <td class="td-title">{{ inc.incident_type }}</td>
+            <td class="td-muted">{{ inc.campus or '—' }}</td>
+            <td class="td-muted" style="max-width:140px;font-size:.73rem;">{{ inc.block or '—' }}</td>
+            <td><span class="priority-badge pri-{{ inc.priority }}">{{ inc.priority }}</span></td>
+            <td><span class="sev-label sev-{{ inc.severity }}">{{ inc.severity }}</span></td>
+            <td>
+              <span class="status-badge status-{{ inc.status }}" id="status-{{ inc.id }}">
+                {{ inc.status | replace('_',' ') | title }}
+              </span>
+            </td>
+            <td>
+              {% if inc.assigned_to %}
+                <strong>{{ inc.assigned_to }}</strong>
+              {% else %}
+                <span class="td-muted">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if inc.task_status %}
+                <span class="task-badge task-{{ inc.task_status }}">{{ inc.task_status | replace('_',' ') }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="td-muted">{{ inc.created_at[:16] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty"><div class="empty-icon">✓</div><p>No active incidents at this time.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='script.js') }}"></script>{% endblock %}

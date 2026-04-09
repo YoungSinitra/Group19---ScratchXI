@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Task #{{ alert.id }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Task #{{ alert.id }} — {{ alert.incident_type }}</h1>
+      <p>{{ alert.campus or 'Unknown campus' }} · {{ alert.block or alert.location }}</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('security_dashboard') }}" class="btn btn-outline">← Back to Tasks</a>
+      {% if assignment.task_status in ['accepted', 'in_progress'] %}
+        <a href="{{ url_for('submit_feedback', alert_id=alert.id) }}" class="btn btn-brand">Submit Report</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="detail-layout">
+    <div>
+      <!-- Incident Info -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><h2>Incident Information</h2></div>
+        <div class="card-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Type</div><div class="detail-value">{{ alert.incident_type }}</div></div>
+            <div class="detail-item"><div class="detail-label">Campus</div><div class="detail-value">{{ alert.campus or '—' }}</div></div>
+            <div class="detail-item"><div class="detail-label">Block</div><div class="detail-value">{{ alert.block or alert.location }}</div></div>
+            <div class="detail-item"><div class="detail-label">Reported By</div><div class="detail-value">{{ alert.reporter_name }}</div></div>
+            <div class="detail-item">
+              <div class="detail-label">Severity</div>
+              <div class="detail-value"><span class="sev-label sev-{{ alert.severity }}">{{ alert.severity }}</span></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Priority</div>
+              <div class="detail-value"><span class="priority-badge pri-{{ alert.priority }}">{{ alert.priority }}</span></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Reported At</div>
+              <div class="detail-value">{{ alert.created_at[:16] }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Current Status</div>
+              <div class="detail-value">
+                <span class="status-badge status-{{ alert.status }}">
+                  {{ alert.status | replace('_',' ') | title }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:0.85rem;">
+            <div class="detail-label" style="margin-bottom:0.3rem;">Description</div>
+            <p style="font-size:0.85rem;color:var(--text-2);line-height:1.65;">{{ alert.description }}</p>
+          </div>
+          {% if alert.image_filename %}
+          <div style="margin-top:1rem;">
+            <div class="detail-label" style="margin-bottom:0.4rem;">Incident Photo (Reporter)</div>
+            <a href="{{ url_for('static', filename='uploads/'+alert.image_filename) }}" target="_blank">
+              <img src="{{ url_for('static', filename='uploads/'+alert.image_filename) }}"
+                   style="max-width:320px;border-radius:var(--radius);border:1px solid var(--border-light);">
+            </a>
+          </div>
+          {% endif %}
+          {% if assignment.notes %}
+          <div style="margin-top:1rem;padding:0.75rem;background:var(--bg-subtle);border-radius:var(--radius-sm);">
+            <div class="detail-label" style="margin-bottom:0.2rem;">Admin Notes</div>
+            <p style="font-size:0.83rem;">{{ assignment.notes }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- My Submitted Reports -->
+      <div class="card">
+        <div class="card-header"><h2>My Investigation Reports ({{ feedback|length }})</h2></div>
+        <div class="card-body">
+          {% if feedback %}
+            {% for fb in feedback %}
+            <div class="feedback-item">
+              <div class="feedback-header">
+                <span class="feedback-status">{{ fb.status_update }}</span>
+                <span>{{ fb.submitted_at[:16] }}</span>
+              </div>
+              <p class="feedback-notes">{{ fb.notes }}</p>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p style="font-size:0.82rem;color:var(--text-3);">No reports submitted yet.</p>
+          {% endif %}
+          {% if assignment.task_status in ['accepted','in_progress'] %}
+            <a href="{{ url_for('submit_feedback', alert_id=alert.id) }}" class="btn btn-brand" style="margin-top:1rem;">+ Submit Investigation Report</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: task status + evidence -->
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><h2>Task Status</h2></div>
+        <div class="card-body">
+          <div class="detail-item" style="margin-bottom:0.85rem;">
+            <div class="detail-label">Current Task Status</div>
+            <div class="detail-value">
+              <span class="task-badge task-{{ assignment.task_status }}">
+                {{ assignment.task_status | replace('_',' ') }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item" style="margin-bottom:0.85rem;">
+            <div class="detail-label">Assigned At</div>
+            <div class="detail-value">{{ assignment.assigned_at[:16] }}</div>
+          </div>
+          {% if assignment.task_status == 'assigned' %}
+            <button class="btn btn-brand btn-full" onclick="acceptThisTask({{ alert.id }})">✓ Accept This Task</button>
+          {% elif assignment.task_status == 'accepted' %}
+            <button class="btn btn-warn btn-full" onclick="markInProgress({{ alert.id }})">Mark as In Progress</button>
+          {% elif assignment.task_status == 'submitted' %}
+            <div class="info-banner" style="margin-top:0;">Report submitted. Awaiting admin review.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Evidence I've Uploaded -->
+      <div class="card">
+        <div class="card-header"><h2>My Evidence Photos ({{ evidence|length }})</h2></div>
+        <div class="card-body">
+          {% if evidence %}
+            <div class="evidence-grid" style="grid-template-columns:1fr 1fr;">
+              {% for ev in evidence %}
+              <div class="evidence-card">
+                <a href="{{ url_for('static', filename='uploads/'+ev.filename) }}" target="_blank">
+                  <img src="{{ url_for('static', filename='uploads/'+ev.filename) }}" alt="Evidence">
+                </a>
+                <div class="evidence-card-meta">{{ ev.uploaded_at[:16] }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p style="font-size:0.82rem;color:var(--text-3);">No evidence uploaded. Submit a report to attach evidence.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function acceptThisTask(alertId) {
+  const res  = await fetch('/security/accept_task', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ alert_id: alertId })
+  });
+  const data = await res.json();
+  if (data.success) { alert('Task accepted!'); location.reload(); }
+}
+async function markInProgress(alertId) {
+  const res  = await fetch('/security/update_task_status', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ alert_id: alertId, task_status: 'in_progress' })
+  });
+  const data = await res.json();
+  if (data.success) { alert('Status updated to In Progress.'); location.reload(); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Special Request{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Special Request</h1>
+      <p>Request security assistance — your request goes directly to the security team</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline">← Back</a>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:680px;">
+    <div class="card-header"><h2>Submit a Request</h2></div>
+    <div class="card-body">
+      <form method="POST" class="form-section" id="sr-form">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field">
+          <label>Request Type <span style="color:var(--status-active);">*</span></label>
+          <select name="request_type" id="request_type" required
+                  onchange="handleTypeChange(this.value)">
+            {% for v,l in categories %}
+              <option value="{{ v }}" {% if not v %}disabled selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Campus <span style="color:var(--status-active);">*</span></label>
+          <select name="campus" required>
+            <option value="" disabled selected>Select campus…</option>
+            {% for c in campuses %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Elevator Locked-In extra fields — shown only when that type is selected -->
+        <div id="elevator-fields" class="elevator-fields" style="display:none;">
+          <div style="font-size:.78rem;font-weight:700;color:#6b21a8;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em;">
+            🛗 Elevator Assistance Details
+          </div>
+          <div class="field">
+            <label>Building <span style="color:var(--status-active);">*</span></label>
+            <input type="text" name="building" id="building-input"
+                   placeholder="e.g. Block A, Library Block">
+          </div>
+          <div class="field">
+            <label>Floor <span style="font-weight:400;font-size:.78rem;">(optional)</span></label>
+            <input type="text" name="floor_info" placeholder="e.g. 3rd Floor">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Brief Description <span style="color:var(--status-active);">*</span></label>
+          <textarea name="description" required minlength="5" rows="3"
+                    placeholder="Describe your situation so security can respond effectively…"></textarea>
+          <span class="field-hint">Minimum 5 characters.</span>
+        </div>
+
+        <div style="display:flex;gap:.6rem;padding-top:.25rem;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-brand btn-lg">🛡️ Submit Request</button>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="info-banner" style="max-width:680px;margin-top:1rem;">
+    🔒 Your request is sent directly to the security team. For life-threatening emergencies
+    call <strong>10111</strong> (Police) or <strong>10177</strong> (Ambulance) immediately,
+    or use the <a href="{{ url_for('emergency_response') }}">Emergency Response</a> page.
+  </div>
+</div>
+
+<script>
+function handleTypeChange(val) {
+  const elevatorFields = document.getElementById('elevator-fields');
+  const buildingInput  = document.getElementById('building-input');
+  const isElevator = (val === 'Elevator Locked-In Assistance');
+  elevatorFields.style.display = isElevator ? 'block' : 'none';
+  if (buildingInput) buildingInput.required = isElevator;
+}
+// Init on load (handles browser back / form re-render)
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('request_type');
+  if (sel && sel.value) handleTypeChange(sel.value);
+});
+</script>
+{% endblock %}

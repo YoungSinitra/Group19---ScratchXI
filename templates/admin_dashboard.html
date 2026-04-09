@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Admin Dashboard</h1>
+      <p>Assign, monitor and manage all campus security incidents</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('emergency_response') }}" class="btn btn-emergency">Emergency Response</a>
+      <a href="{{ url_for('analytics') }}" class="btn btn-outline">Analytics</a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid stats-grid-5">
+    <div class="stat stat-active"><div class="stat-num">{{ stats.open }}</div><div class="stat-lbl">Open</div></div>
+    <div class="stat stat-inv"><div class="stat-num">{{ stats.assigned }}</div><div class="stat-lbl">Assigned</div></div>
+    <div class="stat stat-inv"><div class="stat-num">{{ stats.investigating }}</div><div class="stat-lbl">Investigating</div></div>
+    <div class="stat stat-res"><div class="stat-num">{{ stats.resolved }}</div><div class="stat-lbl">Resolved</div></div>
+    <div class="stat stat-total"><div class="stat-num">{{ stats.total }}</div><div class="stat-lbl">Total</div></div>
+  </div>
+
+  <!-- Emergency Broadcast -->
+  <div class="broadcast-card">
+    <h3>📢 Emergency Broadcast</h3>
+    <p style="font-size:0.78rem;margin-bottom:0.85rem;line-height:1.6;">
+      Campus-wide announcement — displays as a banner on every connected user's screen instantly.
+    </p>
+    <div class="broadcast-row">
+      <input type="text" id="broadcast-input" placeholder="Type emergency message…">
+      <button class="btn btn-brand" onclick="sendBroadcast()">Broadcast Now</button>
+    </div>
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="filter-label-row"><span class="filter-label">Search incidents</span></div>
+  <form method="GET" action="{{ url_for('admin_dashboard') }}" class="filter-bar">
+    <input type="text" name="q" value="{{ search }}" class="filter-input" aria-label="Search incidents">
+    <select name="campus" class="filter-select">
+      <option value="">All campuses</option>
+      {% for c in campuses %}<option value="{{ c }}" {% if c==campus_f %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    <select name="status" class="filter-select">
+      <option value="">All statuses</option>
+      {% for v,l in alert_statuses %}<option value="{{ v }}" {% if v==status_f %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select>
+    <select name="priority" class="filter-select">
+      <option value="">All priorities</option>
+      {% for v,l in priority_levels %}<option value="{{ v }}" {% if v==priority_f %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    {% if search or campus_f or status_f or priority_f %}
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-ghost btn-sm">Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- Incidents Table -->
+  <div class="card">
+    <div class="card-header">
+      <h2>All Incidents</h2>
+      <span class="live-label"><span class="live-dot"></span> Live</span>
+    </div>
+    <div class="tbl-wrap">
+      {% if alerts %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Type</th><th>Campus / Block</th>
+            <th>Priority</th><th>Severity</th><th>Status</th>
+            <th>Assigned To</th><th>Task</th><th>Image</th><th>Reported</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in alerts %}
+          <tr id="row-{{ a.id }}">
+            <td class="td-muted">{{ a.id }}</td>
+            <td class="td-title">
+              <a href="{{ url_for('admin_incident_detail', alert_id=a.id) }}" style="color:var(--text);">
+                {{ a.incident_type }}
+              </a>
+            </td>
+            <td class="td-muted">{{ a.campus or '—' }}<br><span style="font-size:0.7rem;">{{ a.block or '' }}</span></td>
+            <td><span class="priority-badge pri-{{ a.priority }}">{{ a.priority }}</span></td>
+            <td><span class="sev-label sev-{{ a.severity }}">{{ a.severity }}</span></td>
+            <td><span class="status-badge status-{{ a.status }}" id="badge-{{ a.id }}">{{ a.status | replace('_',' ') | title }}</span></td>
+            <td class="td-muted">{{ a.assigned_to or '—' }}</td>
+            <td>
+              {% if a.task_status %}
+                <span class="task-badge task-{{ a.task_status }}">{{ a.task_status | replace('_',' ') }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if a.image_filename %}
+                <a href="{{ url_for('static', filename='uploads/'+a.image_filename) }}" target="_blank">
+                  <img src="{{ url_for('static', filename='uploads/'+a.image_filename) }}"
+                       style="width:36px;height:36px;object-fit:cover;border-radius:4px;">
+                </a>
+              {% else %}—{% endif %}
+            </td>
+            <td class="td-muted">{{ a.created_at[:16] }}</td>
+            <td>
+              <div class="action-group">
+                <button class="btn btn-warn btn-sm" onclick="openAssign({{ a.id }}, '{{ a.incident_type | replace("'","\\'") }}')">Assign</button>
+                <select class="inline-select" onchange="adminUpdateStatus({{ a.id }}, this.value)" title="Change status">
+                  <option value="">Status…</option>
+                  {% for v,l in alert_statuses %}<option value="{{ v }}" {% if v==a.status %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                </select>
+                <a href="{{ url_for('admin_incident_detail', alert_id=a.id) }}" class="btn btn-ghost btn-sm">View</a>
+                <button class="btn btn-danger btn-sm" onclick="adminDeleteAlert({{ a.id }})">✕</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty"><div class="empty-icon">✓</div><p>No incidents found.</p></div>
+      {% endif %}
+    </div>
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}<a href="{{ url_for('admin_dashboard', page=page-1, q=search, campus=campus_f, status=status_f, priority=priority_f) }}" class="btn btn-ghost btn-sm">← Prev</a>{% endif %}
+      <span style="font-size:0.8rem;">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}<a href="{{ url_for('admin_dashboard', page=page+1, q=search, campus=campus_f, status=status_f, priority=priority_f) }}" class="btn btn-ghost btn-sm">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Broadcast Log -->
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-header"><h2>Broadcast Log</h2><span class="live-label"><span class="live-dot"></span> Live</span></div>
+    <div id="broadcast-log" class="alert-list">
+      {% if broadcasts %}
+        {% for b in broadcasts %}
+        <div class="alert-item">
+          <div class="alert-stripe" style="background:var(--brand);"></div>
+          <div class="alert-content">
+            <div class="alert-title">{{ b.message }}</div>
+            <div class="alert-meta">
+              <span class="meta-tag">📢 {{ b.sender_name }}</span>
+              <span class="meta-tag">🕐 {{ b.sent_at[:16] }}</span>
+            </div>
+          </div>
+          <div class="alert-right"><span class="status-badge" style="background:var(--brand-light);color:var(--brand);">Broadcast</span></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty" id="no-broadcasts"><div class="empty-icon">📢</div><p>No broadcasts sent yet.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Assignment Modal -->
+<div class="assign-modal-overlay" id="assign-modal">
+  <div class="assign-modal">
+    <h3>Assign Incident</h3>
+    <p id="assign-modal-title" style="font-size:0.82rem;color:var(--text-3);margin-bottom:1.1rem;"></p>
+    <div class="form-section">
+      <div class="field">
+        <label>Security Officer</label>
+        <select id="assign-officer">
+          <option value="">Select officer…</option>
+          {% for o in security_officers %}
+            <option value="{{ o.id }}"
+              {% if not o.is_available %}style="color:var(--text-muted);"{% endif %}>
+              {{ o.name }}
+              {% if o.is_available %}— 🟢 Available{% elif o.clock_in %}— 🔴 Unavailable{% else %}— ⚫ Off Campus{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <span class="field-hint">🟢 Available officers are clocked in and ready for assignment.</span>
+      </div>
+      <div class="field">
+        <label>Assignment notes (optional)</label>
+        <textarea id="assign-notes" style="min-height:70px;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.5rem;padding-top:0.25rem;">
+        <button class="btn btn-brand" onclick="confirmAssign()">Assign →</button>
+        <button class="btn btn-ghost" onclick="closeAssign()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let assignAlertId = null;
+
+function openAssign(alertId, incidentType) {
+  assignAlertId = alertId;
+  document.getElementById('assign-modal-title').textContent = 'Incident #' + alertId + ' — ' + incidentType;
+  document.getElementById('assign-modal').classList.add('open');
+}
+function closeAssign() {
+  document.getElementById('assign-modal').classList.remove('open');
+  assignAlertId = null;
+}
+
+async function confirmAssign() {
+  const officerId = document.getElementById('assign-officer').value;
+  const notes     = document.getElementById('assign-notes').value;
+  if (!officerId) { alert('Please select an officer.'); return; }
+  try {
+    const res  = await fetch('/admin/assign', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ alert_id: assignAlertId, security_id: parseInt(officerId), notes })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeAssign();
+      showToast('Assigned to ' + data.officer, 'success');
+      const badge = document.getElementById('badge-' + assignAlertId);
+      if (badge) { badge.className = 'status-badge status-assigned'; badge.textContent = 'Assigned'; }
+    } else showToast('Assignment failed.', 'error');
+  } catch { showToast('Network error.', 'error'); }
+}
+
+async function adminUpdateStatus(alertId, status) {
+  if (!status) return;
+  const res  = await fetch('/admin/update_status', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ alert_id: alertId, status })
+  });
+  const data = await res.json();
+  if (data.success) showToast('Status updated.', 'success');
+}
+
+async function adminDeleteAlert(alertId) {
+  if (!confirm('Delete this incident? This cannot be undone.')) return;
+  const res  = await fetch('/admin/delete_alert', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ alert_id: alertId })
+  });
+  const data = await res.json();
+  if (data.success) { document.getElementById('row-'+alertId)?.remove(); showToast('Incident removed.', 'success'); }
+}
+</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='script.js') }}"></script>{% endblock %}

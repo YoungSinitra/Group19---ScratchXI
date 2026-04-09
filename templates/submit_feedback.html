@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Submit Investigation Report{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Submit Investigation Report</h1>
+      <p>Incident #{{ alert.id }} — {{ alert.incident_type }} · {{ alert.campus or 'Unknown' }} / {{ alert.block or alert.location }}</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('security_task_detail', alert_id=alert.id) }}" class="btn btn-outline">← Back to Task</a>
+    </div>
+  </div>
+
+  <div style="max-width:680px;">
+    <!-- Incident Summary -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="card-header"><h2>Incident Summary</h2></div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Campus</div><div class="detail-value">{{ alert.campus or '—' }}</div></div>
+          <div class="detail-item"><div class="detail-label">Block</div><div class="detail-value">{{ alert.block or alert.location }}</div></div>
+          <div class="detail-item">
+            <div class="detail-label">Priority</div>
+            <div class="detail-value"><span class="priority-badge pri-{{ alert.priority }}">{{ alert.priority }}</span></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Severity</div>
+            <div class="detail-value"><span class="sev-label sev-{{ alert.severity }}">{{ alert.severity }}</span></div>
+          </div>
+        </div>
+        <div style="margin-top:0.7rem;font-size:0.82rem;color:var(--text-2);">{{ alert.description }}</div>
+        {% if assignment.notes %}
+          <div style="margin-top:0.6rem;padding:0.6rem;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:0.78rem;">
+            📋 Admin note: {{ assignment.notes }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Report Form -->
+    <div class="card">
+      <div class="card-header"><h2>Investigation Report</h2></div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data"
+              action="{{ url_for('submit_feedback', alert_id=alert.id) }}"
+              class="form-section">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+          <div class="field">
+            <label>Status after investigation</label>
+            <select name="status_update" required>
+              <option value="" disabled selected>Select outcome…</option>
+              {% for v,l in feedback_statuses %}
+                <option value="{{ v }}">{{ l }}</option>
+              {% endfor %}
+            </select>
+            <span class="field-hint">This updates the incident status and notifies admin.</span>
+          </div>
+
+          <div class="field">
+            <label>Investigation notes / written report</label>
+            <textarea name="notes" required style="min-height:140px;"
+             ></textarea>
+            <span class="field-hint">Minimum 10 characters. Be as detailed as possible.</span>
+          </div>
+
+          <div class="field">
+            <label>Photographic evidence <span style="font-weight:400;font-size:0.77rem;">(optional — proof of attendance or completion)</span></label>
+            <input type="file" name="evidence" accept="image/*">
+            <span class="field-hint">Accepts PNG, JPG, GIF, WEBP. Stored with timestamp and linked to this incident.</span>
+          </div>
+
+          <div class="info-banner" style="margin:0;">
+            🕐 Submission timestamp will be automatically recorded at the time you click submit.
+          </div>
+
+          <div style="display:flex;gap:0.6rem;padding-top:0.25rem;">
+            <button type="submit" class="btn btn-brand btn-lg">📋 Submit Investigation Report</button>
+            <a href="{{ url_for('security_task_detail', alert_id=alert.id) }}" class="btn btn-outline btn-lg">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

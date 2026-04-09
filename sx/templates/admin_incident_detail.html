@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block title %}Incident #{{ alert.id }}{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Incident #{{ alert.id }}</h1>
+      <p>{{ alert.incident_type }} · {{ alert.campus or 'Unknown campus' }}</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">← Back to Panel</a>
+    </div>
+  </div>
+
+  <div class="detail-layout">
+    <!-- Left column: incident info + feedback + evidence -->
+    <div>
+      <!-- Incident Details -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><h2>Incident Details</h2></div>
+        <div class="card-body">
+          <div class="detail-grid">
+            <div class="detail-item"><div class="detail-label">Type</div><div class="detail-value">{{ alert.incident_type }}</div></div>
+            <div class="detail-item"><div class="detail-label">Campus</div><div class="detail-value">{{ alert.campus or '—' }}</div></div>
+            <div class="detail-item"><div class="detail-label">Block</div><div class="detail-value">{{ alert.block or '—' }}</div></div>
+            <div class="detail-item"><div class="detail-label">Reported By</div><div class="detail-value">{{ alert.reporter_name }}</div></div>
+            <div class="detail-item">
+              <div class="detail-label">Severity</div>
+              <div class="detail-value"><span class="sev-label sev-{{ alert.severity }}">{{ alert.severity }}</span></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Priority</div>
+              <div class="detail-value"><span class="priority-badge pri-{{ alert.priority }}">{{ alert.priority }}</span></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Status</div>
+              <div class="detail-value">
+                <span class="status-badge status-{{ alert.status }}" id="alert-status-badge">
+                  {{ alert.status | replace('_',' ') | title }}
+                </span>
+              </div>
+            </div>
+            <div class="detail-item"><div class="detail-label">Reported At</div><div class="detail-value">{{ alert.created_at[:16] }}</div></div>
+          </div>
+          <div style="margin-top:0.85rem;">
+            <div class="detail-label" style="margin-bottom:0.3rem;">Description</div>
+            <p style="font-size:0.85rem;color:var(--text-2);line-height:1.65;">{{ alert.description }}</p>
+          </div>
+          {% if alert.image_filename %}
+          <div style="margin-top:1rem;">
+            <div class="detail-label" style="margin-bottom:0.4rem;">Incident Photo (Reporter)</div>
+            <a href="{{ url_for('static', filename='uploads/'+alert.image_filename) }}" target="_blank">
+              <img src="{{ url_for('static', filename='uploads/'+alert.image_filename) }}"
+                   style="max-width:340px;border-radius:var(--radius);border:1px solid var(--border-light);">
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Investigation Feedback -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><h2>Investigation Reports ({{ feedback|length }})</h2></div>
+        <div class="card-body">
+          {% if feedback %}
+            {% for fb in feedback %}
+            <div class="feedback-item">
+              <div class="feedback-header">
+                <span class="feedback-status">{{ fb.status_update }}</span>
+                <span>by {{ fb.submitted_by_name }}</span>
+                <span>{{ fb.submitted_at[:16] }}</span>
+              </div>
+              <p class="feedback-notes">{{ fb.notes }}</p>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p style="font-size:0.82rem;color:var(--text-3);">No investigation reports submitted yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Evidence -->
+      <div class="card">
+        <div class="card-header"><h2>Evidence Photos ({{ evidence|length }})</h2></div>
+        <div class="card-body">
+          {% if evidence %}
+            <div class="evidence-grid">
+              {% for ev in evidence %}
+              <div class="evidence-card">
+                <a href="{{ url_for('static', filename='uploads/'+ev.filename) }}" target="_blank">
+                  <img src="{{ url_for('static', filename='uploads/'+ev.filename) }}" alt="Evidence">
+                </a>
+                <div class="evidence-card-meta">
+                  {{ ev.uploaded_by_name }}<br>{{ ev.uploaded_at[:16] }}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p style="font-size:0.82rem;color:var(--text-3);">No evidence photos uploaded yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: assignment + status control + timeline -->
+    <div>
+      <!-- Assignment Control -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><h2>Assignment</h2></div>
+        <div class="card-body">
+          {% if assignments %}
+            {% set active = assignments | selectattr('is_active', 'equalto', 1) | list %}
+            {% if active %}
+              {% set a = active[0] %}
+              <p style="font-size:0.82rem;margin-bottom:0.75rem;">
+                Currently assigned to <strong>{{ a.security_name }}</strong>
+                <br><span class="task-badge task-{{ a.task_status }}">{{ a.task_status | replace('_',' ') }}</span>
+              </p>
+              {% if a.notes %}
+                <p style="font-size:0.78rem;color:var(--text-3);">Notes: {{ a.notes }}</p>
+              {% endif %}
+            {% endif %}
+          {% else %}
+            <p style="font-size:0.82rem;color:var(--text-3);margin-bottom:0.75rem;">Not yet assigned.</p>
+          {% endif %}
+
+          <div class="form-section" style="margin-top:0.75rem;">
+            <div class="field">
+              <label>Assign / Reassign to</label>
+              <select id="detail-officer">
+                <option value="">Select officer…</option>
+                {% for o in security_officers %}
+                  <option value="{{ o.id }}">{{ o.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Assignment notes</label>
+              <textarea id="detail-notes" style="min-height:60px;"></textarea>
+            </div>
+            <button class="btn btn-brand btn-full" onclick="detailAssign({{ alert.id }})">Assign →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Control -->
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-header"><h2>Update Status</h2></div>
+        <div class="card-body">
+          <div class="form-section">
+            <div class="field">
+              <label>New status</label>
+              <select id="detail-status">
+                {% for v,l in alert_statuses %}
+                  <option value="{{ v }}" {% if v==alert.status %}selected{% endif %}>{{ l }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button class="btn btn-brand btn-full" onclick="detailUpdateStatus({{ alert.id }})">Update Status</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignment History -->
+      {% if assignments %}
+      <div class="card">
+        <div class="card-header"><h2>Assignment History</h2></div>
+        <div class="card-body" style="font-size:0.8rem;">
+          {% for a in assignments %}
+          <div style="padding:0.5rem 0;border-bottom:1px solid var(--border-light);">
+            <strong>{{ a.security_name }}</strong>
+            <span class="task-badge task-{{ a.task_status }}" style="margin-left:0.4rem;">{{ a.task_status | replace('_',' ') }}</span>
+            {% if not a.is_active %}<span style="color:var(--text-3);font-size:0.71rem;margin-left:0.4rem;">(reassigned)</span>{% endif %}
+            <div style="color:var(--text-3);font-size:0.71rem;margin-top:2px;">
+              Assigned {{ a.assigned_at[:16] }} by {{ a.assigned_by_name }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+async function detailAssign(alertId) {
+  const officerId = document.getElementById('detail-officer').value;
+  const notes     = document.getElementById('detail-notes').value;
+  if (!officerId) { alert('Select an officer first.'); return; }
+  const res  = await fetch('/admin/assign', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ alert_id: alertId, security_id: parseInt(officerId), notes })
+  });
+  const data = await res.json();
+  if (data.success) { alert('Assigned to ' + data.officer + '. Refresh to see updated history.'); location.reload(); }
+  else alert('Assignment failed.');
+}
+async function detailUpdateStatus(alertId) {
+  const status = document.getElementById('detail-status').value;
+  const res    = await fetch('/admin/update_status', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ alert_id: alertId, status })
+  });
+  const data = await res.json();
+  if (data.success) {
+    const badge = document.getElementById('alert-status-badge');
+    if (badge) { badge.className = 'status-badge status-' + status; badge.textContent = status.replace('_',' '); }
+    alert('Status updated to: ' + status);
+  } else alert('Failed to update status.');
+}
+</script>
+{% endblock %}

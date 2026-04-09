@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Security Attendance{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Security Attendance</h1>
+      <p>Live roster of security personnel on campus — {{ today }}</p>
+    </div>
+    <span class="live-label"><span class="live-dot"></span> Live</span>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="stats-grid">
+    <div class="stat stat-res">
+      <div class="stat-num">{{ on_campus | selectattr('availability','equalto','available') | list | length }}</div>
+      <div class="stat-lbl">Available</div>
+    </div>
+    <div class="stat stat-inv">
+      <div class="stat-num">{{ on_campus | selectattr('availability','equalto','unavailable') | list | length }}</div>
+      <div class="stat-lbl">Unavailable</div>
+    </div>
+    <div class="stat stat-total">
+      <div class="stat-num">{{ on_campus | length }}</div>
+      <div class="stat-lbl">On Campus</div>
+    </div>
+    <div class="stat stat-active">
+      <div class="stat-num">{{ off_campus | length }}</div>
+      <div class="stat-lbl">Off Campus</div>
+    </div>
+  </div>
+
+  <!-- On Campus -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header">
+      <h2>Currently On Campus</h2>
+      <span class="live-label"><span class="live-dot"></span> Live</span>
+    </div>
+    {% if on_campus %}
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Officer</th><th>Campus</th><th>Shift</th><th>Clock In</th><th>Availability</th></tr>
+        </thead>
+        <tbody>
+          {% for rec in on_campus %}
+          <tr id="att-row-{{ rec.security_id }}">
+            <td class="td-title">{{ rec.security_name }}</td>
+            <td class="td-muted">{{ rec.campus }}</td>
+            <td class="td-muted" style="font-size:.75rem;">{{ rec.shift }}</td>
+            <td class="td-muted">{{ rec.clock_in[:16] }}</td>
+            <td>
+              <span class="task-badge {% if rec.availability=='available' %}task-submitted{% else %}task-in_progress{% endif %}">
+                {% if rec.availability == 'available' %}🟢 Available{% else %}🔴 Unavailable{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty"><div class="empty-icon">👮</div><p>No security officers are currently clocked in.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Off Campus / Not Clocked In -->
+  <div class="card">
+    <div class="card-header"><h2>Not Clocked In Today</h2></div>
+    {% if off_campus %}
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Officer</th><th>Email</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for sec in off_campus %}
+          <tr>
+            <td class="td-title">{{ sec.name }}</td>
+            <td class="td-muted">{{ sec.email }}</td>
+            <td><span class="status-badge status-closed">Off Campus</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty"><div class="empty-icon">✅</div><p>All security officers are clocked in.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Auto-refresh attendance every 60 seconds
+setInterval(() => location.reload(), 60000);
+</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='script.js') }}"></script>{% endblock %}

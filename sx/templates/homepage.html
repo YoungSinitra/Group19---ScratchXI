@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScratchXI — DUT Campus Security Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:      #0A2952;
+      --navy-mid:  #0d3363;
+      --navy-deep: #061a36;
+      --steel:     #C0CBDE;
+      --white:     #FAFAFF;
+      --text:      #121212;
+      --text-3:    #4a5568;
+      --gold:      #E8C547;
+      --glow:      rgba(10,41,82,0.35);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #0d1b2e; color: var(--white); overflow-x: hidden; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; min-height: 100vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+    }
+    .hero-img {
+      width: 100%; height: 100%; object-fit: cover; object-position: center 40%;
+      filter: brightness(0.38) saturate(0.8);
+    }
+    /* navy gradient overlay */
+    .hero-overlay {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(
+        160deg,
+        rgba(6,26,54,0.72) 0%,
+        rgba(10,41,82,0.55) 45%,
+        rgba(6,26,54,0.85) 100%
+      );
+    }
+    /* animated radial glow */
+    .hero-glow {
+      position: absolute; inset: 0; z-index: 1;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%,
+        rgba(10,41,82,0.0) 0%,
+        rgba(10,41,82,0.5) 100%);
+      animation: glow-pulse 6s ease-in-out infinite;
+    }
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.6; }
+      50%       { opacity: 1; }
+    }
+    /* Particle dots */
+    .particles {
+      position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none;
+    }
+    .particle {
+      position: absolute; width: 2px; height: 2px;
+      background: rgba(232,197,71,0.6); border-radius: 50%;
+      animation: float-up linear infinite;
+    }
+    @keyframes float-up {
+      from { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.4; }
+      to   { transform: translateY(-20px) translateX(40px); opacity: 0; }
+    }
+
+    /* ── NAV ── */
+    .hp-nav {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.5rem 3rem;
+    }
+    .hp-nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .hp-badge {
+      width: 36px; height: 36px; background: var(--gold);
+      clip-path: polygon(50% 0%, 100% 12%, 100% 75%, 50% 100%, 0% 75%, 0% 12%);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 20px rgba(232,197,71,0.5);
+    }
+    .hp-badge-text {
+      font-family: 'Sora', sans-serif; font-size: 6.5px; font-weight: 800;
+      color: var(--navy-deep); letter-spacing: .02em; line-height: 1; text-align: center;
+    }
+    .hp-wordmark {
+      font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 700;
+      color: var(--white); letter-spacing: -.02em;
+    }
+    .hp-wordmark span { color: var(--gold); }
+    .hp-nav-links { display: flex; align-items: center; gap: .5rem; }
+    .hp-nav-link {
+      color: rgba(250,250,255,.70); font-size: .82rem; font-weight: 500;
+      padding: .38rem .85rem; border-radius: 6px;
+      text-decoration: none; transition: all .18s;
+    }
+    .hp-nav-link:hover { color: var(--white); background: rgba(255,255,255,.10); text-decoration: none; }
+
+    /* ── HERO CONTENT ── */
+    .hero-content {
+      position: relative; z-index: 5;
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 3rem 2rem 6rem;
+    }
+    .hero-badge-pill {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: rgba(232,197,71,0.12); border: 1px solid rgba(232,197,71,0.30);
+      color: var(--gold); font-size: .76rem; font-weight: 600;
+      padding: .32rem 1rem; border-radius: 20px;
+      letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 1.75rem;
+      animation: fade-down .6s ease both;
+    }
+    .hero-title {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 800; line-height: 1.05;
+      letter-spacing: -.03em;
+      color: var(--white);
+      margin-bottom: 1.35rem;
+      animation: fade-down .7s ease .1s both;
+    }
+    .hero-title .accent { color: var(--gold); }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: rgba(250,250,255,.72); max-width: 620px;
+      line-height: 1.7; font-weight: 300;
+      margin-bottom: 2.75rem;
+      animation: fade-down .7s ease .2s both;
+    }
+    .hero-cta {
+      display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+      animation: fade-down .7s ease .35s both;
+    }
+
+    /* ── GLOWING SIGN IN BUTTON ── */
+    .btn-glow {
+      position: relative;
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--navy);
+      color: var(--white);
+      font-family: 'Sora', sans-serif; font-size: .9rem; font-weight: 700;
+      padding: .85rem 2.2rem; border-radius: 50px; border: none;
+      cursor: pointer; text-decoration: none;
+      transition: transform .2s, box-shadow .3s;
+      letter-spacing: .02em;
+      overflow: hidden;
+    }
+    .btn-glow::before {
+      content: '';
+      position: absolute; inset: -3px; border-radius: 54px; z-index: -1;
+      background: conic-gradient(
+        from var(--angle, 0deg),
+        transparent 20%, var(--gold) 40%, #fff 50%, var(--gold) 60%, transparent 80%
+      );
+      animation: spin-border 2.5s linear infinite;
+    }
+    .btn-glow::after {
+      content: '';
+      position: absolute; inset: 2px; border-radius: 48px; z-index: -1;
+      background: var(--navy);
+    }
+    @property --angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+    @keyframes spin-border { to { --angle: 360deg; } }
+    .btn-glow:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 32px rgba(232,197,71,0.45), 0 8px 24px rgba(10,41,82,0.6);
+      text-decoration: none; color: var(--white);
+    }
+    .btn-glow:hover::before { animation-duration: 1s; }
+
+    /* Learn more button */
+    .btn-learn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.06);
+      border: 1.5px solid rgba(255,255,255,.22);
+      color: var(--white);
+      font-family: 'Sora', sans-serif; font-size: .9rem; font-weight: 600;
+      padding: .85rem 2.2rem; border-radius: 50px;
+      cursor: pointer; text-decoration: none;
+      transition: all .2s;
+      backdrop-filter: blur(8px);
+      letter-spacing: .02em;
+    }
+    .btn-learn:hover {
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.4);
+      transform: translateY(-2px);
+      text-decoration: none; color: var(--white);
+    }
+
+    /* ── SCROLL INDICATOR ── */
+    .scroll-ind {
+      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      z-index: 5; display: flex; flex-direction: column; align-items: center; gap: .4rem;
+      color: rgba(255,255,255,.4); font-size: .7rem; letter-spacing: .1em;
+      text-transform: uppercase; animation: bob 2s ease-in-out infinite;
+    }
+    .scroll-ind svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+    @keyframes bob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
+
+    /* ── FEATURES SECTION ── */
+    .features {
+      background: var(--steel);
+      padding: 6rem 2rem;
+    }
+    .features-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--navy);
+      margin-bottom: .75rem; display: flex; align-items: center; gap: .6rem;
+    }
+    .section-label::before { content: ''; width: 28px; height: 2px; background: var(--navy); border-radius: 2px; }
+    .section-title {
+      font-family: 'Sora', sans-serif; font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; color: var(--navy-deep); letter-spacing: -.02em;
+      margin-bottom: .7rem; line-height: 1.2;
+    }
+    .section-sub { font-size: 1rem; color: var(--text-3); max-width: 520px; line-height: 1.7; margin-bottom: 3.5rem; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;
+    }
+    .feature-card {
+      background: #fff; border-radius: 16px; padding: 1.75rem;
+      border: 1px solid rgba(10,41,82,.08);
+      box-shadow: 0 2px 12px rgba(10,41,82,.07);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(10,41,82,.13); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(10,41,82,.07); display: flex; align-items: center;
+      justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;
+    }
+    .feature-title { font-family: 'Sora', sans-serif; font-size: .95rem; font-weight: 700; color: var(--navy-deep); margin-bottom: .4rem; }
+    .feature-desc  { font-size: .82rem; color: var(--text-3); line-height: 1.65; }
+
+    /* ── CAMPUSES SECTION ── */
+    .campuses { background: var(--navy-deep); padding: 6rem 2rem; }
+    .campuses-inner { max-width: 1100px; margin: 0 auto; }
+    .campuses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 3rem; }
+    .campus-chip {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px; padding: 1.25rem 1rem; text-align: center;
+      transition: all .18s; cursor: default;
+    }
+    .campus-chip:hover { background: rgba(232,197,71,.08); border-color: rgba(232,197,71,.3); transform: translateY(-2px); }
+    .campus-chip-icon { font-size: 1.6rem; margin-bottom: .5rem; }
+    .campus-chip-name { font-family: 'Sora', sans-serif; font-size: .82rem; font-weight: 600; color: var(--white); }
+    .campus-chip-city { font-size: .72rem; color: rgba(255,255,255,.5); margin-top: .2rem; }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      background: var(--steel); padding: 6rem 2rem; text-align: center;
+    }
+    .cta-inner { max-width: 640px; margin: 0 auto; }
+    .cta-title { font-family: 'Sora', sans-serif; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; color: var(--navy-deep); letter-spacing: -.02em; margin-bottom: .85rem; }
+    .cta-sub { color: var(--text-3); font-size: .95rem; line-height: 1.7; margin-bottom: 2.5rem; }
+    .btn-cta-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--navy); color: var(--white);
+      font-family: 'Sora', sans-serif; font-size: .9rem; font-weight: 700;
+      padding: .9rem 2.4rem; border-radius: 50px; border: none;
+      text-decoration: none; transition: all .2s;
+      box-shadow: 0 4px 20px rgba(10,41,82,.3);
+    }
+    .btn-cta-primary:hover { background: var(--navy-mid); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(10,41,82,.4); text-decoration: none; color: var(--white); }
+    .btn-cta-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--navy);
+      font-family: 'Sora', sans-serif; font-size: .9rem; font-weight: 600;
+      padding: .9rem 2.4rem; border-radius: 50px;
+      border: 2px solid var(--navy); text-decoration: none; transition: all .2s;
+      margin-left: .75rem;
+    }
+    .btn-cta-secondary:hover { background: var(--navy); color: var(--white); text-decoration: none; }
+
+    /* ── FOOTER ── */
+    .hp-footer {
+      background: var(--navy-deep); padding: 2rem 3rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    .hp-footer-brand { font-family: 'Sora', sans-serif; font-size: .85rem; color: rgba(255,255,255,.5); }
+    .hp-footer-brand span { color: var(--gold); font-weight: 700; }
+    .hp-footer-copy { font-size: .75rem; color: rgba(255,255,255,.35); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fade-down { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+      .hp-nav { padding: 1.25rem 1.5rem; }
+      .hp-nav-links { display: none; }
+      .hero-content { padding: 2rem 1.5rem 5rem; }
+      .features, .campuses, .cta-section { padding: 4rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <img src="{{ url_for('static', filename='dut-header.jpg') }}" alt="DUT Campus" class="hero-img">
+    <div class="hero-overlay"></div>
+    <div class="hero-glow"></div>
+    <div class="particles" id="particles"></div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="hp-nav">
+    <a href="/" class="hp-nav-brand">
+      <div class="hp-badge"><span class="hp-badge-text">ScratchXI</span></div>
+      <span class="hp-wordmark">Scratch<span>XI</span></span>
+    </a>
+    <div class="hp-nav-links">
+      <a href="#features" class="hp-nav-link">Features</a>
+      <a href="#campuses" class="hp-nav-link">Campuses</a>
+      <a href="{{ url_for('login') }}" class="hp-nav-link">Sign In</a>
+    </div>
+  </nav>
+
+  <!-- Hero Content -->
+  <div class="hero-content">
+    <div class="hero-badge-pill">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
+      DUT Campus Security Platform
+    </div>
+
+    <h1 class="hero-title">
+      Campus Safety,<br><span class="accent">Smarter</span> &amp; Faster
+    </h1>
+
+    <p class="hero-sub">
+      ScratchXI is the Durban University of Technology's integrated security
+      management platform — real-time incident reporting, instant alerts,
+      and full coordination between students, staff, and security personnel.
+    </p>
+
+    <div class="hero-cta">
+      <a href="{{ url_for('login') }}" class="btn-glow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Sign In
+      </a>
+      <a href="#features" class="btn-learn">
+        Learn More
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="scroll-ind">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+</section>
+
+
+<!-- ══════════ FEATURES ══════════ -->
+<section class="features" id="features">
+  <div class="features-inner">
+    <div class="section-label">What we do</div>
+    <h2 class="section-title">A safer campus<br>starts here</h2>
+    <p class="section-sub">ScratchXI gives every member of the DUT community a direct line to campus security — from reporting an incident to tracking its resolution in real time.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🚨</div>
+        <div class="feature-title">Instant Incident Reporting</div>
+        <div class="feature-desc">Students and staff can report incidents in seconds — with photo evidence, exact location, and severity level — directly from any device.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <div class="feature-title">Real-Time Alerts</div>
+        <div class="feature-desc">Emergency broadcasts reach every connected user instantly. Live alert feeds update without page refresh across all dashboards.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-title">Security Task Management</div>
+        <div class="feature-desc">Admin assigns incidents to available security personnel. Officers accept, investigate, and submit reports — all tracked end-to-end.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Analytics & Hotspots</div>
+        <div class="feature-desc">Visual dashboards reveal incident hotspots by campus and block, helping admin deploy security resources where they're needed most.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <div class="feature-title">Secure Campus Chat</div>
+        <div class="feature-desc">Direct communication channel between campus users and security. Moderated, rate-limited, and fully logged for accountability.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Role-Based Access</div>
+        <div class="feature-desc">Four distinct roles — Student, Staff, Security, and Admin — each with carefully scoped permissions and dedicated dashboards.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ CAMPUSES ══════════ -->
+<section class="campuses" id="campuses">
+  <div class="campuses-inner">
+    <div class="section-label" style="color:var(--gold);">
+      <span style="background:var(--gold);display:inline-block;width:28px;height:2px;border-radius:2px;"></span>
+      Coverage
+    </div>
+    <h2 class="section-title" style="color:var(--white);">All DUT campuses,<br>one platform</h2>
+    <p class="section-sub" style="color:rgba(255,255,255,.6);">ScratchXI operates across all Durban University of Technology campuses with accurate block-level location data mapped from official DUT site plans.</p>
+    <div class="campuses-grid">
+      <div class="campus-chip">
+        <div class="campus-chip-icon">🏛️</div>
+        <div class="campus-chip-name">Steve Biko</div>
+        <div class="campus-chip-city">Berea, Durban</div>
+      </div>
+      <div class="campus-chip">
+        <div class="campus-chip-icon">🏗️</div>
+        <div class="campus-chip-name">ML Sultan</div>
+        <div class="campus-chip-city">CBD, Durban</div>
+      </div>
+      <div class="campus-chip">
+        <div class="campus-chip-icon">🏫</div>
+        <div class="campus-chip-name">City Campus</div>
+        <div class="campus-chip-city">Smith St, Durban</div>
+      </div>
+      <div class="campus-chip">
+        <div class="campus-chip-icon">📚</div>
+        <div class="campus-chip-name">Ritson</div>
+        <div class="campus-chip-city">Durban</div>
+      </div>
+      <div class="campus-chip">
+        <div class="campus-chip-icon">🌿</div>
+        <div class="campus-chip-name">Indumiso</div>
+        <div class="campus-chip-city">Pietermaritzburg</div>
+      </div>
+      <div class="campus-chip">
+        <div class="campus-chip-icon">🌊</div>
+        <div class="campus-chip-name">Riverside</div>
+        <div class="campus-chip-city">Pietermaritzburg</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ CTA ══════════ -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2 class="cta-title">Ready to keep<br>your campus safe?</h2>
+    <p class="cta-sub">Join the ScratchXI platform using your DUT institutional email. Students use <strong>@dut4life.ac.za</strong> — staff, security and admin use <strong>@dut.ac.za</strong>.</p>
+    <div>
+      <a href="{{ url_for('login') }}" class="btn-cta-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Sign In
+      </a>
+      <a href="{{ url_for('register') }}" class="btn-cta-secondary">Create Account</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="hp-footer">
+  <div class="hp-footer-brand">
+    <span>ScratchXI</span> — Durban University of Technology Campus Security Platform
+  </div>
+  <div class="hp-footer-copy">© 2026 DUT · All rights reserved</div>
+</footer>
+
+
+<script>
+// Generate floating particles
+(function() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left   = Math.random() * 100 + '%';
+    p.style.width  = (Math.random() * 2 + 1) + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDuration  = (Math.random() * 14 + 8) + 's';
+    p.style.animationDelay     = (Math.random() * 10) + 's';
+    p.style.opacity = Math.random() * 0.7 + 0.2;
+    container.appendChild(p);
+  }
+})();
+
+// Smooth scroll for learn more
+document.querySelector('.btn-learn')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Create Account{% endblock %}
+{% block banner %}{% endblock %}
+{% block content %}
+<div class="auth-wrap" style="padding:2.5rem 1rem;">
+  <div class="auth-box" style="max-width:480px;">
+
+    <div class="auth-logo">
+      <div class="logo-badge" style="background:#0A2952;">
+        <span class="logo-badge-text">ScratchXI</span>
+      </div>
+      <span class="auth-logo-wordmark">Scratch<span>XI</span></span>
+    </div>
+
+    <div class="auth-card">
+      <h1 class="auth-card-title">Create your account</h1>
+      <p class="auth-card-sub">Join the ScratchXI campus security platform at DUT</p>
+
+      <form method="POST" action="/register" class="form-section" id="reg-form">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field">
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name"
+                 value="{{ form.name if form else '' }}" required autofocus>
+        </div>
+
+        <div class="field">
+          <label for="role">I am a…</label>
+          <select id="role" name="role" onchange="updateEmailHint(this.value)">
+            {% for value, label in roles %}
+              <option value="{{ value }}"
+                {% if form and form.role == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email"
+                 value="{{ form.email if form else '' }}" required
+                 oninput="validateEmailInput(this)">
+          <span class="field-hint" id="email-hint" style="color:var(--brand);">
+            Students: use your student number — e.g. 22411296@dut4life.ac.za
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw-wrap">
+            <input type="password" id="password" name="password" required minlength="8">
+            <button type="button" class="pw-toggle" onclick="togglePw('password', this)" aria-label="Show password">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div id="pw-rules" style="margin-top:.4rem;display:flex;flex-direction:column;gap:2px;">
+            <span class="pw-rule" id="rule-len">✗ At least 8 characters</span>
+            <span class="pw-rule" id="rule-upper">✗ At least 1 uppercase letter</span>
+            <span class="pw-rule" id="rule-num">✗ At least 1 number</span>
+            <span class="pw-rule" id="rule-special">✗ At least 1 special character (!@#$…)</span>
+          </div>
+        </div>
+
+        <div class="popia-box">
+          <div class="popia-title">📋 POPIA — Data Processing Notice</div>
+          <p class="popia-text">
+            In accordance with the <strong>Protection of Personal Information Act (POPIA)</strong>,
+            ScratchXI collects your name, email address, and role for campus security management
+            at the Durban University of Technology. Your data is stored securely, not shared with
+            third parties, and used exclusively to operate this safety platform. You have the right
+            to access, correct, or request deletion of your data by contacting the administrator.
+          </p>
+          <label class="popia-check">
+            <input type="checkbox" name="popia_consent" value="yes" required>
+            <span>I have read and consent to the collection and processing of my personal
+            information in accordance with POPIA.</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-brand btn-full btn-lg">
+          Create account →
+        </button>
+
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      <a href="{{ url_for('index') }}" class="btn btn-outline btn-sm" style="margin-bottom:.65rem;width:100%;justify-content:center;">← Back to Home</a>
+      <div style="display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;font-size:.82rem;">
+        <span style="color:var(--text-3);">Already have an account?</span>
+        <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm">← Back to Login</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.pw-rule { font-size: .72rem; color: var(--text-muted); }
+.pw-rule.pass { color: var(--status-res); }
+</style>
+
+<script>
+const STUDENT_RE = /^\d+@dut4life\.ac\.za$/;
+const STAFF_RE   = /^[^@\s]+@dut\.ac\.za$/;
+const HINTS = {
+  student:  'Student: must use studentnumber@dut4life.ac.za (numbers only, e.g. 22411296@dut4life.ac.za)',
+  staff:    'Staff: must use your @dut.ac.za email address',
+  security: 'Security: must use your @dut.ac.za email address',
+  admin:    'Admin: must use your @dut.ac.za email address',
+};
+
+function updateEmailHint(role) {
+  const hint = document.getElementById('email-hint');
+  hint.textContent = HINTS[role] || '';
+  hint.style.color = 'var(--brand)';
+  // Update pattern
+  const emailInput = document.getElementById('email');
+  if (role === 'student') {
+    emailInput.pattern = '^\\d+@dut4life\\.ac\\.za$';
+    emailInput.title   = 'Must be studentnumber@dut4life.ac.za (digits only before @)';
+  } else {
+    emailInput.pattern = '^[^@\\s]+@dut\\.ac\\.za$';
+    emailInput.title   = 'Must be a @dut.ac.za email address';
+  }
+  validateEmailInput(emailInput);
+}
+
+function validateEmailInput(input) {
+  const role  = document.getElementById('role').value;
+  const email = input.value.trim().toLowerCase();
+  const hint  = document.getElementById('email-hint');
+  if (!email) { hint.style.color = 'var(--brand)'; return; }
+  let valid = false;
+  if (role === 'student') {
+    valid = STUDENT_RE.test(email);
+    if (!valid && email.length > 3) {
+      hint.textContent = 'Invalid. Example: 22411296@dut4life.ac.za';
+      hint.style.color = 'var(--status-active)';
+    } else if (valid) {
+      hint.textContent = '✓ Valid student email';
+      hint.style.color = 'var(--status-res)';
+    }
+  } else {
+    valid = STAFF_RE.test(email);
+    if (!valid && email.includes('@')) {
+      hint.textContent = 'Must end in @dut.ac.za';
+      hint.style.color = 'var(--status-active)';
+    } else if (valid) {
+      hint.textContent = '✓ Valid DUT email';
+      hint.style.color = 'var(--status-res)';
+    }
+  }
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const hidden = inp.type === 'password';
+  inp.type = hidden ? 'text' : 'password';
+  btn.querySelector('svg').innerHTML = hidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
+// Live password strength checker
+document.getElementById('password').addEventListener('input', function() {
+  const v = this.value;
+  const rules = [
+    ['rule-len',     v.length >= 8],
+    ['rule-upper',   /[A-Z]/.test(v)],
+    ['rule-num',     /\d/.test(v)],
+    ['rule-special', /[!@#$%^&*()\-_=+\[\]{}|;:',.<>?\/`~]/.test(v)],
+  ];
+  rules.forEach(([id, pass]) => {
+    const el = document.getElementById(id);
+    el.textContent = (pass ? '✓' : '✗') + ' ' + el.textContent.slice(2);
+    el.className = 'pw-rule' + (pass ? ' pass' : '');
+  });
+});
+
+// Init on load
+window.addEventListener('DOMContentLoaded', () => {
+  const role = document.getElementById('role').value;
+  updateEmailHint(role);
+});
+</script>
+{% endblock %}

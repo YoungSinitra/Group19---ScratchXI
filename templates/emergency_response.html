@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Emergency Response{% endblock %}
+{% block content %}
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Emergency Response</h1>
+      <p>DUT Campus emergency services directory — Durban, KwaZulu-Natal</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="javascript:history.back()" class="btn btn-outline">← Back</a>
+    </div>
+  </div>
+
+  <!-- Priority call cards -->
+  <div class="er-priority-grid">
+    <div class="er-priority-card er-police">
+      <div class="er-priority-icon">🚔</div>
+      <div>
+        <div class="er-priority-label">Police Emergency</div>
+        <div class="er-priority-number">10111</div>
+        <div class="er-priority-desc">Immediate police response for violent incidents, assault, theft, protest escalation, or criminal activity.</div>
+      </div>
+      <a href="tel:10111" class="er-call-btn er-call-police">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.43a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.87a16 16 0 0 0 6.07 6.07l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Call 10111
+      </a>
+    </div>
+    <div class="er-priority-card er-ambulance">
+      <div class="er-priority-icon">🚑</div>
+      <div>
+        <div class="er-priority-label">Ambulance Emergency</div>
+        <div class="er-priority-number">10177</div>
+        <div class="er-priority-desc">Immediate medical emergency response for injuries, collapse, or urgent medical incidents requiring paramedic assistance.</div>
+      </div>
+      <a href="tel:10177" class="er-call-btn er-call-ambulance">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.43a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.87a16 16 0 0 0 6.07 6.07l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Call 10177
+      </a>
+    </div>
+  </div>
+
+  <!-- Directory: 3-column balanced grid -->
+  <div class="er-section-title">Emergency Services Directory</div>
+
+  <!-- Row 1: Police | Ambulance | Fire -->
+  <div class="er-dir-grid-3">
+    <div class="card er-dir-card">
+      <div class="card-header"><h2>🚔 Police</h2></div>
+      <div class="card-body">
+        <ul class="er-contact-list">
+          <li><span class="er-num">10111</span><span class="er-desc">National Flying Squad</span></li>
+          <li><span class="er-num">086 001 0111</span><span class="er-desc">Report a Crime</span></li>
+          <li><span class="er-num">031 361 0000</span><span class="er-desc">Metro Police &amp; Metro Fire</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card er-dir-card">
+      <div class="card-header"><h2>🚑 Ambulance</h2></div>
+      <div class="card-body">
+        <ul class="er-contact-list">
+          <li><span class="er-num">10177</span><span class="er-desc">Ambulance (National)</span></li>
+          <li><span class="er-num">031 309 1404 / 1778</span><span class="er-desc">City Med</span></li>
+          <li><span class="er-num">031 337 6522</span><span class="er-desc">SA Red Cross</span></li>
+          <li><span class="er-num">031 305 6588</span><span class="er-desc">St Johns Ambulance</span></li>
+          <li><span class="er-num">082 911 / 0800 333 444</span><span class="er-desc">Netcare</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card er-dir-card">
+      <div class="card-header"><h2>🔥 Fire &amp; Disaster</h2></div>
+      <div class="card-body">
+        <ul class="er-contact-list">
+          <li><span class="er-num">031 361 0000</span><span class="er-desc">Fire &amp; Disaster Management</span></li>
+          <li><span class="er-num">080 000 5133</span><span class="er-desc">Mountain Rescue</span></li>
+          <li><span class="er-num">031 361 8567</span><span class="er-desc">Sea Rescue</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Infrastructure | Health | Helplines -->
+  <div class="er-dir-grid-3" style="margin-top:1rem;">
+    <div class="card er-dir-card">
+      <div class="card-header"><h2>🔧 Infrastructure</h2></div>
+      <div class="card-body">
+        <ul class="er-contact-list">
+          <li><span class="er-num">080 131 3013</span><span class="er-desc">Water / Sewer — 24hr</span></li>
+          <li><span class="er-num">083 707 3013</span><span class="er-desc">Water / Sewer — SMS</span></li>
+          <li><span class="er-num">080 131 3111</span><span class="er-desc">Electricity — 24hr</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card er-dir-card">
+      <div class="card-header"><h2>🏥 Health &amp; Welfare</h2></div>
+      <div class="card-body">
+        <ul class="er-contact-list">
+          <li><span class="er-num">031 765 5886</span><span class="er-desc">AIDS Counselling</span></li>
+          <li><span class="er-num">031 202 9520</span><span class="er-desc">AIDS Enquiries</span></li>
+          <li><span class="er-num">031 462 1127</span><span class="er-desc">CROW (Wildlife)</span></li>
+          <li><span class="er-num">031 579 6500</span><span class="er-desc">SPCA Durban</span></li>
+          <li><span class="er-num">031 764 1212</span><span class="er-desc">SPCA Kloof</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card er-dir-card">
+      <div class="card-header"><h2>📞 Helplines</h2></div>
+      <div class="card-body">
+        <ul class="er-contact-list">
+          <li><span class="er-num">0861 435 722</span><span class="er-desc">Alcoholics Anonymous</span></li>
+          <li><span class="er-num">084 409 2679</span><span class="er-desc">Open Door Crisis Centre</span></li>
+          <li><span class="er-num">080 005 5555</span><span class="er-desc">Childline KZN</span></li>
+          <li><span class="er-num">086 132 2322</span><span class="er-desc">LifeLine</span></li>
+          <li><span class="er-num">080 001 2322</span><span class="er-desc">AIDS Helpline</span></li>
+          <li><span class="er-num">083 900 6962</span><span class="er-desc">Narcotics Anonymous</span></li>
+          <li><span class="er-num">031 201 5471</span><span class="er-desc">Birthright</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="er-footer-note">
+    In any life-threatening situation dial <strong>10111</strong> (Police) or <strong>10177</strong> (Ambulance) first.
+    You can also <a href="{{ url_for('report_incident') }}">report an incident</a>
+    or reach security via <a href="{{ url_for('chat') }}">Campus Chat</a>.
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Campus Chat{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+{% endblock %}
+{% block content %}
+
+{# Hidden data nodes read by chat.js #}
+<span id="current-user-name"
+  data-name="{{ session.get('user_name') }}"
+  data-role="{{ session.get('user_role') }}"
+  data-uid="{{ session.get('user_id') }}"
+  style="display:none;"></span>
+<span id="chat-limit-data"
+  data-limit="{{ chat_limit }}"
+  data-today="{{ messages_today }}"
+  style="display:none;"></span>
+<span id="chat-lock-state"
+  data-locked="{{ '1' if chat_locked else '0' }}"
+  style="display:none;"></span>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Campus Chat</h1>
+      <p>Real-time communication between campus users and security personnel</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      {% if session.get('user_role') in ('admin','security','staff') %}
+        <a href="{{ url_for('chat_history') }}" class="btn btn-outline btn-sm">📂 Past Chats</a>
+      {% endif %}
+      {% if session.get('user_role') in ('admin','security') %}
+        <a href="{{ url_for('private_chat') }}" class="btn btn-brand btn-sm"
+           style="background:rgba(10,41,82,0.85);">🔒 Private Channel</a>
+      {% endif %}
+      <span class="live-label"><span class="live-dot"></span> Live</span>
+    </div>
+  </div>
+
+  {% set role = session.get('user_role') %}
+
+  {# ── Lockdown banner (visible to everyone when chat is locked) ── #}
+  {% if chat_locked %}
+  <div class="info-banner mod-lockdown-banner" style="max-width:740px;margin:0 auto .75rem;">
+    🔒 <strong>Chat is currently locked by security.</strong>
+    Only security personnel can send messages.
+  </div>
+  {% endif %}
+
+  {# ── Daily limit banner for students/staff ── #}
+  {% if role in ('student', 'staff') %}
+  <div id="limit-banner" class="info-banner" style="max-width:740px;margin:0 auto 1rem;">
+    {% if messages_today >= chat_limit %}
+      ⚠️ You have used all <strong>{{ chat_limit }} messages</strong> for today. Your limit resets at midnight.
+    {% else %}
+      💬 Daily allowance: <strong id="limit-count">{{ messages_today }}</strong> / {{ chat_limit }} used today.
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="chat-wrap" style="max-width:740px;margin:0 auto;">
+    <div class="chat-box" id="chat-box">
+      <div class="chat-system">Campus Security Chat · All messages are visible to everyone</div>
+
+      {% for msg in messages %}
+        <div class="chat-msg
+            {% if msg.sender_name == session.get('user_name') %}own{% else %}other{% endif %}
+            {% if msg.sender_role in ('security','admin') %}security{% endif %}"
+          data-id="{{ msg.id }}">
+          <div class="chat-meta">
+            {% if msg.sender_role == 'admin' %}🔑 Admin
+            {% elif msg.sender_role == 'security' %}🛡️ Security
+            {% elif msg.sender_role == 'staff' %}🏫 Staff
+            {% else %}🎓 Student{% endif %}
+            — {{ msg.sender_name }} · {{ msg.timestamp[:16] if msg.timestamp else '' }}
+            {% if role == 'admin' %}
+              <button onclick="deleteMessage({{ msg.id }})"
+                style="margin-left:.5rem;font-size:.7rem;color:var(--brand);
+                       cursor:pointer;border:none;background:none;padding:0;">Remove</button>
+            {% endif %}
+          </div>
+          <div class="chat-bubble">{{ msg.message }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="chat-input-bar">
+      <input type="text" id="chat-input" autocomplete="off"
+        {% if (role in ('student','staff') and messages_today >= chat_limit) or chat_locked %}
+          disabled
+        {% endif %}>
+      <button class="btn btn-brand" onclick="sendMessage()"
+        {% if (role in ('student','staff') and messages_today >= chat_limit) or chat_locked %}disabled{% endif %}>
+        Send
+      </button>
+    </div>
+  </div>
+
+  {# ── Moderator status note ── #}
+  {% if role == 'admin' %}
+    <div class="info-banner" style="max-width:740px;margin:.75rem auto 0;">
+      🔑 You are responding as <strong>Admin</strong>.
+      Use <strong>Remove</strong> on any message to delete it.
+    </div>
+  {% elif role == 'security' %}
+    <div class="info-banner" style="max-width:740px;margin:.75rem auto 0;">
+      🛡️ You are responding as <strong>Security</strong>.
+    </div>
+  {% endif %}
+
+
+  {# ════════════════════════════════════════════════════════════
+     MODERATION PANEL — admin and security only
+  ════════════════════════════════════════════════════════════ #}
+  {% if role in ('admin', 'security') %}
+  <div class="card mod-panel" style="max-width:740px;margin:1.25rem auto 0;">
+    <div class="card-header">
+      <h2>🛡️ Moderation Controls</h2>
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <span class="mod-status-label" id="mod-lock-label">
+          {% if chat_locked %}🔒 Chat Locked{% else %}🔓 Chat Open{% endif %}
+        </span>
+        <button id="chat-lock-btn"
+                onclick="toggleChatLock()"
+                class="btn btn-sm {% if chat_locked %}mod-unlock-btn{% else %}mod-lock-btn{% endif %}"
+                style="font-size:.76rem;">
+          {% if chat_locked %}🔓 Unlock Chat{% else %}🔒 Lock Chat{% endif %}
+        </button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:1rem 1.4rem;">
+      <p style="font-size:.76rem;color:var(--text-3);margin-bottom:.85rem;">
+        Users who have sent messages in the last 24 hours. Use <strong>Mute</strong> to
+        prevent a user from sending messages. <strong>Lock Chat</strong> blocks everyone
+        except security and admin.
+      </p>
+
+      {% if active_users %}
+      <div class="mod-user-list">
+        {% for u in active_users %}
+        <div class="mod-user-row {% if u.id in muted_users %}mod-row-muted{% endif %}"
+             data-mod-row="{{ u.id }}">
+          <div class="mod-user-info">
+            <span class="mod-role-icon">
+              {% if u.role == 'staff' %}🏫{% else %}🎓{% endif %}
+            </span>
+            <span class="mod-user-name">{{ u.name }}</span>
+            <span class="mod-role-tag">{{ u.role | title }}</span>
+            {% if u.id in muted_users %}
+              <span class="mod-muted-badge">Muted</span>
+            {% endif %}
+            {% if u.is_banned %}
+              <span class="mod-banned-badge">Banned</span>
+            {% endif %}
+          </div>
+          <div style="display:flex;gap:.4rem;flex-shrink:0;">
+            <button
+              class="btn btn-sm {% if u.id in muted_users %}mod-unmute-btn{% else %}mod-mute-btn{% endif %}"
+              data-mod-uid="{{ u.id }}"
+              data-muted="{{ '1' if u.id in muted_users else '0' }}"
+              onclick="toggleMute({{ u.id }}, this.dataset.muted === '1')">
+              {% if u.id in muted_users %}Unmute{% else %}Mute{% endif %}
+            </button>
+            <button
+              class="btn btn-sm {% if u.is_banned %}mod-unban-btn{% else %}mod-ban-btn{% endif %}"
+              data-ban-uid="{{ u.id }}"
+              data-banned="{{ '1' if u.is_banned else '0' }}"
+              onclick="toggleBan({{ u.id }}, this.dataset.banned === '1', this)"
+              title="{% if u.is_banned %}Lift permanent ban{% else %}Permanent ban from chat{% endif %}">
+              {% if u.is_banned %}Unban{% else %}Ban{% endif %}
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <p style="font-size:.80rem;color:var(--text-3);text-align:center;padding:.75rem 0;">
+          No non-moderator users have chatted in the last 24 hours.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='chat.js') }}"></script>
+{% endblock %}

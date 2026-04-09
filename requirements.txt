@@ -1,0 +1,7 @@
+flask>=3.0
+flask-socketio>=5.3
+python-dotenv>=1.0
+werkzeug>=3.0
+itsdangerous>=2.1
+markupsafe>=2.1
+psycopg2-binary

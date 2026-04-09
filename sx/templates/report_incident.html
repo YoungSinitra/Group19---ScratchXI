@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Report Incident{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Report Security Incident</h1>
+      <p>
+        {% if session.get('user_role') == 'security' %}
+          This incident will go to admin for assignment review.
+        {% else %}
+          Report a suspicious or dangerous situation. Security will be notified.
+        {% endif %}
+      </p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ back_url }}" class="btn btn-outline">← Back</a>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:700px;">
+    <div class="card-header"><h2>Incident Details</h2></div>
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data" class="form-section">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-row">
+          <div class="field">
+            <label>Incident type</label>
+            <select name="incident_type" required onchange="toggleOther(this.value)">
+              {% for v,l in incident_types %}
+                <option value="{{ v }}" {% if not v %}disabled selected{% endif %}>{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Severity</label>
+            <select name="severity" required>
+              {% for v,l in severity_levels %}
+                <option value="{{ v }}" {% if v=='medium' %}selected{% endif %}>{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="field" id="other-field" style="display:none;">
+          <label>Describe the incident type</label>
+          <input type="text" name="other_type">
+        </div>
+
+        <div class="field">
+          <label>Priority level</label>
+          <select name="priority" required>
+            {% for v,l in priority_levels %}
+              <option value="{{ v }}" {% if v=='medium' %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label>Campus</label>
+            <select name="campus" required onchange="loadBlocks(this.value)">
+              {% for v,l in campuses %}
+                <option value="{{ v }}" {% if not v %}disabled selected{% endif %}>{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Block / Location</label>
+            <select name="block" id="block-sel" required>
+              <option value="" disabled selected>Select campus first…</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Description</label>
+          <textarea name="description" required
+           ></textarea>
+          <span class="field-hint">Minimum 10 characters.</span>
+        </div>
+
+        <div class="field">
+          <label>Attach photo <span style="font-weight:400;font-size:0.78rem;">(optional — photo of the incident scene)</span></label>
+          <input type="file" name="image" accept="image/*">
+          <span class="field-hint">Accepts PNG, JPG, GIF, WEBP.</span>
+        </div>
+
+        <div style="display:flex;gap:0.6rem;padding-top:0.25rem;">
+          <button type="submit" class="btn btn-brand btn-lg">📢 Submit Incident</button>
+          <a href="{{ back_url }}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const BLOCKS = {{ dut_blocks | tojson }};
+function toggleOther(v) {
+  const f = document.getElementById('other-field');
+  f.style.display = v === 'Other' ? 'block' : 'none';
+}
+function loadBlocks(c) {
+  const s = document.getElementById('block-sel');
+  s.innerHTML = '<option value="" disabled selected>Select block…</option>';
+  (BLOCKS[c] || []).forEach(b => {
+    const o = document.createElement('option');
+    o.value = o.textContent = b;
+    s.appendChild(o);
+  });
+}
+</script>
+{% endblock %}

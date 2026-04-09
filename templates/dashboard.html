@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Student Dashboard</h1>
+      <p>Your live campus security alerts</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('emergency_response') }}" class="btn btn-emergency">Emergency Response</a>
+      <a href="{{ url_for('report_incident') }}" class="btn btn-brand">🚨 Report Incident</a>
+      <a href="{{ url_for('chat') }}" class="btn btn-outline">Chat with Security</a>
+    </div>
+  </div>
+
+  <div class="filter-label-row"><span class="filter-label">Search alerts</span></div>
+  <form method="GET" class="filter-bar">
+    <input type="text" name="q" value="{{ search }}" class="filter-input" aria-label="Search alerts">
+    <select name="campus" class="filter-select">
+      <option value="">All campuses</option>
+      {% for c in campuses %}<option value="{{ c }}" {% if c==campus_f %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    {% if search or campus_f %}<a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+  </form>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Active Alerts</h2>
+      <span class="live-label"><span class="live-dot"></span> Live</span>
+    </div>
+    <div id="alert-list" class="alert-list">
+      {% if alerts %}
+        {% for a in alerts %}
+        <div class="alert-item" id="alert-{{ a.id }}">
+          <div class="alert-stripe sev-{{ a.severity }}"></div>
+          <div class="alert-content">
+            <div class="alert-title">{{ a.incident_type }}
+              <span class="sev-label sev-{{ a.severity }}">{{ a.severity }}</span>
+              <span class="priority-badge pri-{{ a.priority }}">{{ a.priority }}</span>
+            </div>
+            <div class="alert-desc">{{ a.description }}</div>
+            {% if a.image_filename %}
+              <img src="{{ url_for('static', filename='uploads/'+a.image_filename) }}"
+                   style="max-width:220px;border-radius:6px;margin-top:0.5rem;">
+            {% endif %}
+            <div class="alert-meta">
+              <span class="meta-tag">🏛️ {{ a.campus or '—' }}</span>
+              <span class="meta-tag">📍 {{ a.block or a.location }}</span>
+              <span class="meta-tag">🕐 {{ a.created_at[:16] }}</span>
+              <span class="meta-tag">👤 {{ a.reporter_name }}</span>
+            </div>
+          </div>
+          <div class="alert-right">
+            <span class="status-badge status-{{ a.status }}" id="status-{{ a.id }}">
+              {{ a.status | replace('_',' ') | title }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty" id="no-alerts">
+          <div class="empty-icon">✓</div>
+          <p>No active alerts{% if search or campus_f %} matching your filter{% endif %}.</p>
+        </div>
+      {% endif %}
+    </div>
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}<a href="{{ url_for('dashboard',page=page-1,q=search,campus=campus_f) }}" class="btn btn-ghost btn-sm">← Prev</a>{% endif %}
+      <span style="font-size:0.8rem;">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}<a href="{{ url_for('dashboard',page=page+1,q=search,campus=campus_f) }}" class="btn btn-ghost btn-sm">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-header"><h2>Emergency Broadcasts</h2><span class="live-label"><span class="live-dot"></span> Live</span></div>
+    <div id="broadcast-log" class="alert-list">
+      {% if broadcasts %}
+        {% for b in broadcasts %}
+        <div class="alert-item">
+          <div class="alert-stripe" style="background:var(--brand);"></div>
+          <div class="alert-content">
+            <div class="alert-title">{{ b.message }}</div>
+            <div class="alert-meta">
+              <span class="meta-tag">📢 {{ b.sender_name }}</span>
+              <span class="meta-tag">🕐 {{ b.sent_at[:16] }}</span>
+            </div>
+          </div>
+          <div class="alert-right"><span class="status-badge" style="background:var(--brand-light);color:var(--brand);">Broadcast</span></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty" id="no-broadcasts"><div class="empty-icon">📢</div><p>No broadcasts issued.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='script.js') }}"></script>{% endblock %}

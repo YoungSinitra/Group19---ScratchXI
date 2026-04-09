@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Chat History{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Chat History</h1>
+      <p>Archived messages older than 24 hours</p>
+    </div>
+    <a href="{{ url_for('chat') }}" class="btn btn-outline">← Live Chat</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Archived Messages ({{ messages|length }})</h2>
+    </div>
+    <div style="padding:1.25rem;max-height:600px;overflow-y:auto;display:flex;flex-direction:column;gap:.8rem;">
+      {% if messages %}
+        {% for msg in messages %}
+        <div class="chat-msg other {% if msg.sender_role in ('security','admin') %}security{% endif %}">
+          <div class="chat-meta">
+            {% if msg.sender_role == 'admin' %}🔑 Admin
+            {% elif msg.sender_role == 'security' %}🛡️ Security
+            {% elif msg.sender_role == 'staff' %}🏫 Staff
+            {% else %}🎓 Student{% endif %}
+            — {{ msg.sender_name }} · {{ msg.timestamp[:16] if msg.timestamp else '' }}
+          </div>
+          <div class="chat-bubble">{{ msg.message }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty"><div class="empty-icon">💬</div><p>No archived messages yet. Messages older than 24 hours appear here.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

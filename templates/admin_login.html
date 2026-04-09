@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Admin Login{% endblock %}
+{% block banner %}{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-box">
+
+    <div class="auth-logo">
+      <div class="logo-badge" style="background:#0A2952;">
+        <span class="logo-badge-text">ScratchXI</span>
+      </div>
+      <span class="auth-logo-wordmark">Scratch<span>XI</span></span>
+    </div>
+
+    <div class="auth-card">
+      <h1 class="auth-card-title">Admin Access</h1>
+      <p class="auth-card-sub">Restricted — authorised personnel only</p>
+
+      <form method="POST" action="{{ url_for('admin_login') }}" class="form-section">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field">
+          <label for="username">Admin username</label>
+          <input type="text" id="username" name="username"
+                 required autofocus autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw-wrap">
+            <input type="password" id="password" name="password" required>
+            <button type="button" class="pw-toggle"
+                    onclick="togglePw('password', this)"
+                    aria-label="Toggle password visibility">
+              <svg viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-brand btn-full btn-lg" style="margin-top:.25rem;">
+          Sign in as Admin →
+        </button>
+
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      <a href="{{ url_for('index') }}" class="btn btn-outline btn-sm" style="margin-bottom:.65rem;width:100%;justify-content:center;">← Back to Home</a>
+      <div style="text-align:center;font-size:.82rem;">
+        <a href="{{ url_for('login') }}" style="color:var(--text-3);text-decoration:none;">← Return to standard login</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const hidden = inp.type === 'password';
+  inp.type = hidden ? 'text' : 'password';
+  btn.querySelector('svg').innerHTML = hidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ScratchXI{% endblock %} — ScratchXI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{% block banner %}<div id="emergency-banner" class="emergency-banner"></div>{% endblock %}
+
+{% if session.get('user_id') %}
+<nav class="nav">
+  <a href="{{ url_for('index') }}" class="nav-brand">
+    <div class="logo-badge"><span class="logo-badge-text">ScratchXI</span></div>
+    <span class="logo-wordmark">Scratch<span>XI</span></span>
+  </a>
+
+  <!-- Hamburger button — mobile only -->
+  <button class="nav-hamburger" id="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="nav-links" id="nav-links">
+    {% set role = session.get('user_role') %}
+
+    {% if role == 'admin' %}
+      <a href="{{ url_for('admin_dashboard') }}"  {% if request.endpoint=='admin_dashboard'  %}class="active"{% endif %}>Incidents</a>
+      <a href="{{ url_for('admin_attendance') }}" {% if request.endpoint=='admin_attendance' %}class="active"{% endif %}>Attendance</a>
+      <a href="{{ url_for('analytics') }}"         {% if request.endpoint=='analytics'         %}class="active"{% endif %}>Analytics</a>
+      <a href="{{ url_for('alert_history') }}"     {% if request.endpoint=='alert_history'     %}class="active"{% endif %}>History</a>
+      <a href="{{ url_for('past_alerts') }}"       {% if request.endpoint=='past_alerts'       %}class="active"{% endif %}>Past Alerts</a>
+      <a href="{{ url_for('chat') }}"              {% if request.endpoint in ('chat','chat_history') %}class="active"{% endif %}>Chat</a>
+      <a href="{{ url_for('private_chat') }}"      {% if request.endpoint=='private_chat'      %}class="active"{% endif %} style="color:rgba(255,200,100,.85);">🔒 Private</a>
+
+    {% elif role == 'security' %}
+      <a href="{{ url_for('security_dashboard') }}"       {% if request.endpoint=='security_dashboard'       %}class="active"{% endif %}>Dashboard</a>
+      <a href="{{ url_for('security_team_view') }}"       {% if request.endpoint=='security_team_view'       %}class="active"{% endif %}>Team View</a>
+      <a href="{{ url_for('security_attendance') }}"      {% if request.endpoint=='security_attendance'      %}class="active"{% endif %}>Attendance</a>
+      <a href="{{ url_for('security_report_incident') }}" {% if request.endpoint=='security_report_incident' %}class="active"{% endif %}>Report</a>
+      <a href="{{ url_for('alert_history') }}"            {% if request.endpoint=='alert_history'            %}class="active"{% endif %}>History</a>
+      <a href="{{ url_for('chat') }}"                     {% if request.endpoint in ('chat','chat_history')  %}class="active"{% endif %}>Chat</a>
+      <a href="{{ url_for('private_chat') }}"             {% if request.endpoint=='private_chat'             %}class="active"{% endif %} style="color:rgba(255,200,100,.85);">🔒 Private</a>
+
+    {% elif role == 'staff' %}
+      <a href="{{ url_for('staff_dashboard') }}"  {% if request.endpoint=='staff_dashboard'  %}class="active"{% endif %}>Dashboard</a>
+      <a href="{{ url_for('report_incident') }}"  {% if request.endpoint=='report_incident'  %}class="active"{% endif %}>Report</a>
+      <a href="{{ url_for('alert_history') }}"    {% if request.endpoint=='alert_history'    %}class="active"{% endif %}>History</a>
+      <a href="{{ url_for('past_alerts') }}"      {% if request.endpoint=='past_alerts'      %}class="active"{% endif %}>Past Alerts</a>
+      <a href="{{ url_for('analytics') }}"        {% if request.endpoint=='analytics'        %}class="active"{% endif %}>Analytics</a>
+      <a href="{{ url_for('chat') }}"             {% if request.endpoint in ('chat','chat_history') %}class="active"{% endif %}>Chat</a>
+
+    {% else %}{# student #}
+      <a href="{{ url_for('dashboard') }}"        {% if request.endpoint=='dashboard'        %}class="active"{% endif %}>Dashboard</a>
+      <a href="{{ url_for('report_incident') }}"  {% if request.endpoint=='report_incident'  %}class="active"{% endif %}>Report Incident</a>
+      <a href="{{ url_for('special_request') }}"  {% if request.endpoint=='special_request'  %}class="active"{% endif %}>Special Request</a>
+      <a href="{{ url_for('analytics') }}"        {% if request.endpoint=='analytics'        %}class="active"{% endif %}>Analytics</a>
+      <a href="{{ url_for('chat') }}"             {% if request.endpoint=='chat'             %}class="active"{% endif %}>Chat</a>
+    {% endif %}
+
+    <!-- Mobile-only: user info + logout inside the menu -->
+    <div class="nav-mobile-footer">
+      <span class="nav-user-name">{{ session.get('user_name') }}</span>
+      <a href="{{ url_for('logout') }}" class="btn btn-nav-ghost btn-sm">Log out</a>
+    </div>
+  </div>
+
+  <div class="nav-end">
+    <span class="nav-user-name">{{ session.get('user_name') }}</span>
+    <span class="role-pill {{ session.get('user_role') }}">
+      {% if   role == 'admin'    %}Admin
+      {% elif role == 'security' %}Security
+      {% elif role == 'staff'    %}Staff
+      {% else %}Student{% endif %}
+    </span>
+    <a href="{{ url_for('logout') }}" class="btn btn-nav-ghost btn-sm">Log out</a>
+  </div>
+</nav>
+{% endif %}
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}
+    <div style="padding:.85rem 2rem 0;">
+      {% for cat, msg in msgs %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+{% block scripts %}{% endblock %}
+
+<script>
+function toggleNav() {
+  const links = document.getElementById('nav-links');
+  const btn   = document.getElementById('nav-toggle');
+  links.classList.toggle('nav-open');
+  btn.classList.toggle('nav-toggle-open');
+}
+// Close menu when a link inside it is clicked
+document.addEventListener('DOMContentLoaded', function() {
+  const links = document.querySelectorAll('#nav-links a');
+  links.forEach(function(link) {
+    link.addEventListener('click', function() {
+      document.getElementById('nav-links').classList.remove('nav-open');
+      document.getElementById('nav-toggle').classList.remove('nav-toggle-open');
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% block title %}Security Dashboard{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Security Dashboard</h1>
+      <p>Live campus alerts and your assigned tasks</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('emergency_response') }}" class="btn btn-emergency">Emergency Response</a>
+      <a href="{{ url_for('security_report_incident') }}" class="btn btn-brand">+ Report Incident</a>
+    </div>
+  </div>
+
+  <!-- Task stats -->
+  <div class="stats-grid">
+    <div class="stat stat-active"><div class="stat-num">{{ stats.assigned }}</div><div class="stat-lbl">Awaiting Acceptance</div></div>
+    <div class="stat stat-inv"><div class="stat-num">{{ stats.accepted }}</div><div class="stat-lbl">Accepted</div></div>
+    <div class="stat stat-inv"><div class="stat-num">{{ stats.in_progress }}</div><div class="stat-lbl">In Progress</div></div>
+    <div class="stat stat-res"><div class="stat-num">{{ stats.submitted }}</div><div class="stat-lbl">Reports Submitted</div></div>
+  </div>
+
+  <!-- ══ LIVE ALERT FEED ══ -->
+  <div class="filter-label-row"><span class="filter-label">Search alerts</span></div>
+  <form method="GET" action="{{ url_for('security_dashboard') }}" class="filter-bar">
+    <input type="text" name="q" value="{{ search }}" class="filter-input" aria-label="Search alerts">
+    <select name="campus" class="filter-select">
+      <option value="">All campuses</option>
+      {% for c in campuses %}<option value="{{ c }}" {% if c==campus_f %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    {% if search or campus_f %}<a href="{{ url_for('security_dashboard') }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+  </form>
+
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header">
+      <h2>Active Campus Alerts</h2>
+      <span class="live-label"><span class="live-dot"></span> Live</span>
+    </div>
+    <div id="alert-list" class="alert-list">
+      {% if active_alerts %}
+        {% for a in active_alerts %}
+        <div class="alert-item" id="alert-{{ a.id }}">
+          <div class="alert-stripe sev-{{ a.severity }}"></div>
+          <div class="alert-content">
+            <div class="alert-title">{{ a.incident_type }}
+              {% if a.record_type == 'special_request' %}
+                <span class="record-type-badge record-type-special_request">Special Request</span>
+              {% else %}
+                <span class="record-type-badge record-type-incident">Incident</span>
+              {% endif %}
+              <span class="sev-label sev-{{ a.severity }}">{{ a.severity }}</span>
+              <span class="priority-badge pri-{{ a.priority }}">{{ a.priority }}</span>
+            </div>
+            <div class="alert-desc">{{ a.description }}</div>
+            {% if a.image_filename %}
+              <img src="{{ url_for('static', filename='uploads/'+a.image_filename) }}"
+                   style="max-width:220px;border-radius:6px;margin-top:0.5rem;">
+            {% endif %}
+            <div class="alert-meta">
+              <span class="meta-tag">🏛️ {{ a.campus or '—' }}</span>
+              <span class="meta-tag">📍 {{ a.block or a.location }}</span>
+              <span class="meta-tag">🕐 {{ a.created_at[:16] }}</span>
+              <span class="meta-tag">👤 {{ a.reporter_name }}</span>
+            </div>
+          </div>
+          <div class="alert-right">
+            <span class="status-badge status-{{ a.status }}" id="status-{{ a.id }}">
+              {{ a.status | replace('_',' ') | title }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty" id="no-alerts">
+          <div class="empty-icon">✓</div>
+          <p>No active alerts{% if search or campus_f %} matching your filter{% endif %}.</p>
+        </div>
+      {% endif %}
+    </div>
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}<a href="{{ url_for('security_dashboard',page=page-1,q=search,campus=campus_f) }}" class="btn btn-ghost btn-sm">← Prev</a>{% endif %}
+      <span style="font-size:0.8rem;">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}<a href="{{ url_for('security_dashboard',page=page+1,q=search,campus=campus_f) }}" class="btn btn-ghost btn-sm">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Emergency Broadcasts -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header"><h2>Emergency Broadcasts</h2><span class="live-label"><span class="live-dot"></span> Live</span></div>
+    <div id="broadcast-log" class="alert-list">
+      {% if broadcasts %}
+        {% for b in broadcasts %}
+        <div class="alert-item">
+          <div class="alert-stripe" style="background:var(--brand);"></div>
+          <div class="alert-content">
+            <div class="alert-title">{{ b.message }}</div>
+            <div class="alert-meta">
+              <span class="meta-tag">📢 {{ b.sender_name }}</span>
+              <span class="meta-tag">🕐 {{ b.sent_at[:16] }}</span>
+            </div>
+          </div>
+          <div class="alert-right"><span class="status-badge" style="background:var(--brand-light);color:var(--brand);">Broadcast</span></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty"><div class="empty-icon">📢</div><p>No broadcasts issued.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══ MY ASSIGNED TASKS ══ -->
+  <div class="card">
+    <div class="card-header"><h2>My Assigned Tasks</h2></div>
+    {% if tasks %}
+    <div class="task-grid" style="padding:1rem 1.25rem;">
+      {% for task in tasks %}
+      <div class="task-card" id="task-card-{{ task.id }}">
+        <div class="task-card-header">
+          <div style="flex:1;">
+            <div class="alert-title">{{ task.incident_type }}
+              {% if task.record_type == 'special_request' %}
+                <span class="record-type-badge record-type-special_request">Special Request</span>
+              {% else %}
+                <span class="record-type-badge record-type-incident">Incident</span>
+              {% endif %}
+            </div>
+            <div style="display:flex;gap:0.5rem;margin-top:3px;flex-wrap:wrap;">
+              <span class="priority-badge pri-{{ task.priority }}">{{ task.priority }}</span>
+              <span class="sev-label sev-{{ task.severity }}">{{ task.severity }}</span>
+              {# task-badge id so JS can update it without a page reload #}
+              <span class="task-badge task-{{ task.task_status }}" id="task-badge-{{ task.id }}">
+                {{ task.task_status | replace('_',' ') }}
+              </span>
+            </div>
+          </div>
+          <span class="status-badge status-{{ task.status }}" id="alert-status-{{ task.id }}">
+            {{ task.status | replace('_',' ') | title }}
+          </span>
+        </div>
+
+        <div class="task-card-body">
+          <div class="detail-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="detail-item"><div class="detail-label">Campus</div><div class="detail-value">{{ task.campus or '—' }}</div></div>
+            <div class="detail-item"><div class="detail-label">Block</div><div class="detail-value">{{ task.block or task.location }}</div></div>
+            <div class="detail-item"><div class="detail-label">Reported By</div><div class="detail-value">{{ task.reporter_name }}</div></div>
+            <div class="detail-item"><div class="detail-label">Assigned</div><div class="detail-value">{{ task.assigned_at[:16] }}</div></div>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-3);margin-top:0.6rem;line-height:1.55;">
+            {{ task.description[:140] }}{% if task.description|length > 140 %}…{% endif %}
+          </p>
+          {% if task.asgn_notes %}
+            <div style="margin-top:0.5rem;padding:0.5rem 0.7rem;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:0.77rem;color:var(--text-2);">
+              📋 Admin note: {{ task.asgn_notes }}
+            </div>
+          {% endif %}
+          {% if task.image_filename %}
+            <img src="{{ url_for('static', filename='uploads/'+task.image_filename) }}"
+                 style="max-width:100%;border-radius:6px;margin-top:0.75rem;">
+          {% endif %}
+        </div>
+
+        {# ── Task footer: buttons driven entirely by server-rendered task_status ── #}
+        <div class="task-card-footer" id="task-footer-{{ task.id }}">
+
+          {# STEP 1 — Accept (only when still 'assigned') #}
+          {% if task.task_status == 'assigned' %}
+            <button class="btn btn-brand btn-sm"
+                    onclick="acceptTask({{ task.id }}, this)">
+              ✓ Accept Task
+            </button>
+
+          {# STEP 2 — Mark In Progress (only when 'accepted', not after) #}
+          {% elif task.task_status == 'accepted' %}
+            <button class="btn btn-warn btn-sm"
+                    onclick="setInProgress({{ task.id }}, this)">
+              ▶ In Progress
+            </button>
+            <a href="{{ url_for('security_task_detail', alert_id=task.id) }}"
+               class="btn btn-outline btn-sm">View Details</a>
+
+          {# STEP 3 — Final status dropdown (only when 'in_progress') #}
+          {% elif task.task_status == 'in_progress' %}
+            <div class="task-final-wrap" id="final-wrap-{{ task.id }}">
+              <select class="task-final-select" id="final-select-{{ task.id }}">
+                <option value="">— Select outcome —</option>
+                <option value="requires_reinforcements">Requires Reinforcements</option>
+                <option value="false_alarm">False Alarm</option>
+                <option value="resolved">Resolved</option>
+              </select>
+              <button class="btn btn-success btn-sm"
+                      onclick="submitFinalStatus({{ task.id }})">
+                Confirm
+              </button>
+            </div>
+            <a href="{{ url_for('security_task_detail', alert_id=task.id) }}"
+               class="btn btn-outline btn-sm">View Details</a>
+            <a href="{{ url_for('submit_feedback', alert_id=task.id) }}"
+               class="btn btn-success btn-sm">Submit Report</a>
+
+          {# COMPLETED — task is closed out #}
+          {% elif task.task_status in ['submitted', 'requires_reinforcements', 'false_alarm', 'resolved'] %}
+            <span class="task-done-label">
+              {% if task.task_status == 'requires_reinforcements' %}⚠️ Reinforcements Requested
+              {% elif task.task_status == 'false_alarm' %}✓ False Alarm
+              {% elif task.task_status == 'resolved' %}✅ Resolved
+              {% else %}📋 Report Submitted
+              {% endif %}
+            </span>
+            <a href="{{ url_for('security_task_detail', alert_id=task.id) }}"
+               class="btn btn-outline btn-sm">View Details</a>
+            {% if task.task_status == 'submitted' or task.task_status == 'in_progress' %}
+              <a href="{{ url_for('submit_feedback', alert_id=task.id) }}"
+                 class="btn btn-outline btn-sm">Submit Report</a>
+            {% endif %}
+
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="empty" style="padding:2rem;">
+        <div class="empty-icon">📋</div>
+        <p>No tasks assigned to you yet. Check the alert feed above and use
+           <a href="{{ url_for('security_report_incident') }}">Report Incident</a>
+           to log anything you observe on campus.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+// ── Accept Task ─────────────────────────────────────────────────────────────
+async function acceptTask(alertId, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const res  = await fetch('/security/accept_task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alert_id: alertId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      // Update badge
+      const badge = document.getElementById(`task-badge-${alertId}`);
+      if (badge) { badge.className = 'task-badge task-accepted'; badge.textContent = 'accepted'; }
+      // Replace footer: show "In Progress" button only
+      const footer = document.getElementById(`task-footer-${alertId}`);
+      if (footer) {
+        footer.innerHTML =
+          `<button class="btn btn-warn btn-sm" onclick="setInProgress(${alertId}, this)">▶ In Progress</button>` +
+          `<a href="/security/task/${alertId}" class="btn btn-outline btn-sm">View Details</a>`;
+      }
+      showToast('Task accepted!', 'success');
+    } else {
+      btn.disabled = false; btn.textContent = '✓ Accept Task';
+      showToast(data.error || 'Could not accept task.', 'error');
+    }
+  } catch {
+    btn.disabled = false; btn.textContent = '✓ Accept Task';
+    showToast('Network error.', 'error');
+  }
+}
+
+// ── Set In Progress ─────────────────────────────────────────────────────────
+async function setInProgress(alertId, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const res  = await fetch('/security/update_task_status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alert_id: alertId, task_status: 'in_progress' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      // Update badge
+      const badge = document.getElementById(`task-badge-${alertId}`);
+      if (badge) { badge.className = 'task-badge task-in_progress'; badge.textContent = 'in progress'; }
+      // Replace entire footer with the final-status dropdown
+      const footer = document.getElementById(`task-footer-${alertId}`);
+      if (footer) {
+        footer.innerHTML =
+          `<div class="task-final-wrap" id="final-wrap-${alertId}">` +
+            `<select class="task-final-select" id="final-select-${alertId}">` +
+              `<option value="">— Select outcome —</option>` +
+              `<option value="requires_reinforcements">Requires Reinforcements</option>` +
+              `<option value="false_alarm">False Alarm</option>` +
+              `<option value="resolved">Resolved</option>` +
+            `</select>` +
+            `<button class="btn btn-success btn-sm" onclick="submitFinalStatus(${alertId})">Confirm</button>` +
+          `</div>` +
+          `<a href="/security/task/${alertId}" class="btn btn-outline btn-sm">View Details</a>` +
+          `<a href="/security/submit_feedback/${alertId}" class="btn btn-success btn-sm">Submit Report</a>`;
+      }
+      showToast('Task marked in progress.', 'success');
+    } else {
+      btn.disabled = false; btn.textContent = '▶ In Progress';
+      showToast(data.error || 'Could not update status.', 'error');
+    }
+  } catch {
+    btn.disabled = false; btn.textContent = '▶ In Progress';
+    showToast('Network error.', 'error');
+  }
+}
+
+// ── Submit Final Status from dropdown ──────────────────────────────────────
+async function submitFinalStatus(alertId) {
+  const select = document.getElementById(`final-select-${alertId}`);
+  const status = select ? select.value : '';
+  if (!status) { showToast('Please select an outcome first.', 'error'); return; }
+
+  const confirmBtn = select.nextElementSibling;
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '...'; }
+
+  const labels = {
+    'requires_reinforcements': '⚠️ Reinforcements Requested',
+    'false_alarm':             '✓ False Alarm',
+    'resolved':                '✅ Resolved'
+  };
+
+  try {
+    const res  = await fetch('/security/update_task_status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alert_id: alertId, task_status: status })
+    });
+    const data = await res.json();
+    if (data.success) {
+      // Update badge
+      const badge = document.getElementById(`task-badge-${alertId}`);
+      if (badge) {
+        badge.className = `task-badge task-${status}`;
+        badge.textContent = status.replace(/_/g,' ');
+      }
+      // Replace footer with done label + View Details
+      const footer = document.getElementById(`task-footer-${alertId}`);
+      if (footer) {
+        footer.innerHTML =
+          `<span class="task-done-label">${labels[status] || status}</span>` +
+          `<a href="/security/task/${alertId}" class="btn btn-outline btn-sm">View Details</a>`;
+      }
+      showToast(`Outcome recorded: ${labels[status] || status}`, 'success');
+    } else {
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm'; }
+      showToast(data.error || 'Could not update.', 'error');
+    }
+  } catch {
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm'; }
+    showToast('Network error.', 'error');
+  }
+}
+</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='script.js') }}"></script>{% endblock %}
