@@ -24,6 +24,7 @@ import sqlite3, os, secrets, smtplib, logging, threading, time, functools, html
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, date, timedelta
+import pytz
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 from forms import (
@@ -37,6 +38,9 @@ from forms import (
 # ── Setup ──────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'scratchxi_secure_key_dut_2026_change_in_prod')
+
+# Timezone setup for South African Standard Time (UTC+2)
+SAST = pytz.timezone('Africa/Johannesburg')
 
 # Session cookie security
 app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot read the cookie
@@ -184,7 +188,7 @@ def check_session_timeout():
     """
     if 'user_id' in session:
         last = session.get('last_active')
-        now  = datetime.utcnow()
+        now  = datetime.now(SAST)
         if last:
             try:
                 last_dt = datetime.fromisoformat(last)
@@ -320,7 +324,7 @@ def save_upload(file_obj, prefix=''):
     if size > MAX_UPLOAD_BYTES:
         flash('File exceeds 5 MB limit.', 'error')
         return None
-    ts     = datetime.now().strftime('%Y%m%d%H%M%S')
+    ts     = datetime.now(SAST).strftime('%Y%m%d%H%M%S')
     stored = f"{prefix}{ts}_{fname}"
     dest   = os.path.join(app.config['UPLOAD_FOLDER'], stored)
     # Final guard: ensure dest is still inside UPLOAD_FOLDER
@@ -482,7 +486,7 @@ def login():
             session.clear()  # Prevent session fixation
             session.update({'user_id': user['id'], 'user_name': user['name'],
                             'user_role': user['role'],
-                            'last_active': datetime.utcnow().isoformat()})
+                            'last_active': datetime.now(SAST).isoformat()})
             flash(f'Welcome back, {user["name"]}!', 'success')
             role = user['role']
             if role == 'admin':    return redirect(url_for('admin_dashboard'))
@@ -578,7 +582,7 @@ def admin_login():
         session['user_id']    = user['id']
         session['user_name']  = user['name']
         session['user_role']  = 'admin'
-        session['last_active']= datetime.utcnow().isoformat()
+        session['last_active']= datetime.now(SAST).isoformat()
         audit_log('admin_login', f'username={username}')
         flash(f'Welcome, {username}. Admin session active.', 'success')
         return redirect(url_for('admin_dashboard'))
@@ -966,7 +970,7 @@ def accept_task():
     data     = request.get_json()
     alert_id = data.get('alert_id')
     uid      = session['user_id']
-    now      = datetime.now().isoformat()
+    now      = datetime.now(SAST).isoformat()
     with get_db() as c:
         c.execute(
             "UPDATE assignments SET task_status='accepted', accepted_at=? "
@@ -1053,7 +1057,7 @@ def submit_feedback(alert_id):
         # Save evidence photo if provided
         evidence_filename = save_upload(form.image, prefix='ev_')
 
-        now = datetime.now().isoformat()
+        now = datetime.now(SAST).isoformat()
         with get_db() as c:
             # Insert feedback record
             c.execute(
@@ -1448,7 +1452,7 @@ def handle_message(data):
         'id': msg_id, 'message': message,
         'sender_name': sanitise(session.get('user_name', 'Unknown')),
         'sender_role': role,
-        'timestamp': datetime.now().strftime('%H:%M'),
+        'timestamp': datetime.now(SAST).strftime('%H:%M'),
         'room': room,
     }, broadcast=True)
 
@@ -1475,7 +1479,7 @@ def handle_private_message(data):
         'id': msg_id, 'message': message,
         'sender_name': sanitise(session.get('user_name','Unknown')),
         'sender_role': role,
-        'timestamp': datetime.now().strftime('%H:%M'),
+        'timestamp': datetime.now(SAST).strftime('%H:%M'),
     }, room='private_admin_security')
 
 @socketio.on('broadcast_alert')
@@ -1486,7 +1490,7 @@ def handle_broadcast(data):
     message = sanitise(data.get('message',''))
     if not message: return
     message = message[:300]
-    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+    now = datetime.now(SAST).strftime('%Y-%m-%d %H:%M')
     with get_db() as c:
         c.execute('INSERT INTO broadcasts (message,sent_by) VALUES (?,?)',
                   (message, session['user_id']))

@@ -4,3 +4,4 @@ python-dotenv>=1.0
 werkzeug>=3.0
 itsdangerous>=2.1
 markupsafe>=2.1
+pytz
