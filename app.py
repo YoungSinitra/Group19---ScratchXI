@@ -842,12 +842,18 @@ def assign_incident():
         c.execute("INSERT INTO alert_updates (alert_id,updated_by,status) VALUES (?,?,?)",
                   (alert_id, session['user_id'], 'assigned'))
         officer = c.execute("SELECT name FROM users WHERE id=?", (security_id,)).fetchone()
+        today = date.today().isoformat()
+        att = c.execute(
+            "SELECT COALESCE(campus,'') as campus FROM attendance WHERE security_id=? AND is_active=1 AND date_str=?",
+            (security_id, today)
+        ).fetchone()
     officer_name = officer['name'] if officer else 'Unknown'
-    audit_log('assign_incident', f'alert_id={alert_id} officer={officer_name}')
+    officer_campus = att['campus'] if att and att['campus'] else 'Off Campus'
+    audit_log('assign_incident', f'alert_id={alert_id} officer={officer_name} campus={officer_campus}')
     socketio.emit('incident_assigned', {
-        'alert_id': alert_id, 'officer': officer_name, 'new_status': 'assigned'
+        'alert_id': alert_id, 'officer': officer_name, 'campus': officer_campus, 'new_status': 'assigned'
     })
-    return jsonify({'success': True, 'officer': officer_name})
+    return jsonify({'success': True, 'officer': officer_name, 'campus': officer_campus})
 
 
 @app.route('/admin/update_status', methods=['POST'])
@@ -887,6 +893,7 @@ def admin_delete_alert():
 def admin_incident_detail(alert_id):
     if require_login() or require_role('admin'):
         flash('Access denied.', 'error'); return redirect(url_for('index'))
+    today = date.today().isoformat()
     with get_db() as c:
         alert = c.execute(
             'SELECT a.*,u.name as reporter_name FROM alerts a '
@@ -917,12 +924,33 @@ def admin_incident_detail(alert_id):
             'WHERE au.alert_id=? ORDER BY au.timestamp DESC', (alert_id,)
         ).fetchall()
         security_officers = c.execute(
-            "SELECT id,name FROM users WHERE role='security' ORDER BY name"
+            """SELECT u.id, u.name,
+               CASE WHEN a.is_active=1 AND a.date_str=? AND a.availability='available'
+                    THEN 1 ELSE 0 END as is_available,
+               a.clock_in,
+               COALESCE(a.campus,'') as current_campus,
+               COALESCE(a.shift,'')  as current_shift
+               FROM users u
+               LEFT JOIN attendance a ON a.security_id=u.id AND a.is_active=1 AND a.date_str=?
+               WHERE u.role='security'
+               ORDER BY is_available DESC, u.name""",
+            (today, today)
         ).fetchall()
+        # Get the assigned officer's campus info
+        assigned_campus = None
+        active_asgn = [a for a in assignments if a['is_active']]
+        if active_asgn:
+            assigned_campus = c.execute(
+                """SELECT COALESCE(att.campus,'') as campus, COALESCE(att.shift,'') as shift,
+                   att.clock_in, att.availability
+                   FROM attendance att
+                   WHERE att.security_id=? AND att.is_active=1 AND att.date_str=?""",
+                (active_asgn[0]['security_id'], today)
+            ).fetchone()
     return render_template('admin_incident_detail.html',
         alert=alert, feedback=feedback, evidence=evidence,
         assignments=assignments, updates=updates,
-        security_officers=security_officers,
+        security_officers=security_officers, assigned_campus=assigned_campus,
         alert_statuses=ALERT_STATUSES)
 
 

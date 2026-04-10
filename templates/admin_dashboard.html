@@ -168,11 +168,11 @@
             <option value="{{ o.id }}"
               {% if not o.is_available %}style="color:var(--text-muted);"{% endif %}>
               {{ o.name }}
-              {% if o.is_available %}— 🟢 Available{% elif o.clock_in %}— 🔴 Unavailable{% else %}— ⚫ Off Campus{% endif %}
+              {% if o.is_available %}— 🟢 Available · {{ o.current_campus or 'No Campus' }}{% elif o.clock_in %}— 🔴 Unavailable · {{ o.current_campus or 'No Campus' }}{% else %}— ⚫ Off Campus{% endif %}
             </option>
           {% endfor %}
         </select>
-        <span class="field-hint">🟢 Available officers are clocked in and ready for assignment.</span>
+        <span class="field-hint">🟢 Available officers are clocked in and ready for assignment. Campus shown is where they clocked in.</span>
       </div>
       <div class="field">
         <label>Assignment notes (optional)</label>
@@ -211,7 +211,7 @@ async function confirmAssign() {
     const data = await res.json();
     if (data.success) {
       closeAssign();
-      showToast('Assigned to ' + data.officer, 'success');
+      showToast('Assigned to ' + data.officer + (data.campus ? ' (📍 ' + data.campus + ')' : ''), 'success');
       const badge = document.getElementById('badge-' + assignAlertId);
       if (badge) { badge.className = 'status-badge status-assigned'; badge.textContent = 'Assigned'; }
     } else showToast('Assignment failed.', 'error');
